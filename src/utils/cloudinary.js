@@ -1,31 +1,49 @@
 import {v2 as cloudinary} from "cloudinary"
 import fs from "fs"
-
+import dotenv from "dotenv";
+dotenv.config();
 
 cloudinary.config({ 
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
-  api_key: process.env.CLOUDINARY_API_KEY, 
-  api_secret: process.env.CLOUDINARY_API_SECRET 
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const uploadOnCloudinary = async (localFilePath) => {
+const uploadOnCloudinary = async (localFilePath, folder) => {
     try {
         if (!localFilePath) return null
-        //upload the file on cloudinary
-        const response = await cloudinary.uploader.upload(localFilePath, {
+
+        const response = await cloudinary.uploader.upload(localFilePath, { folder ,
             resource_type: "auto"
         })
-        // file has been uploaded successfull
-        //console.log("file is uploaded on cloudinary ", response.url);
-        fs.unlinkSync(localFilePath)
-        return response;
+
+        if (fs.existsSync(localFilePath)) {
+            fs.unlinkSync(localFilePath);
+        }
+        return response.secure_url;
 
     } catch (error) {
-        fs.unlinkSync(localFilePath) // remove the locally saved temporary file as the upload operation got failed
-        return null;
+        console.error("Error uploading to Cloudinary:", error);
+        if (fs.existsSync(localFilePath)) {
+            fs.unlinkSync(localFilePath);
+        }
+        throw error;  
     }
 }
 
+const publicIdFromPath = (path) => {
+    const match = path.match(/\/upload\/(?:v\d+\/)?(.+?)(\.[^/.]+)?$/);
+    console.log("Match Result:", match);
+    return match ? match[1] : null; 
+}
 
-
-export {uploadOnCloudinary}
+const deleteFromCloudinary = async (path) => {
+    const publicId = publicIdFromPath(path);
+    try {
+        const status =  await cloudinary.api.delete_resources([publicId]);
+    } catch (error) {
+        console.error("Error deleting from Cloudinary:", error);
+        throw error;
+    }
+}
+export {uploadOnCloudinary , publicIdFromPath, deleteFromCloudinary};
