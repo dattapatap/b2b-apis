@@ -6,7 +6,7 @@ export const requireRole = (roles) => {
     const userRoles = req.user?.roles.map(role => role.role_id.role_name) || [];   
     const hasRole = roles.some(role => userRoles.includes(role));
     if (!hasRole) {
-      return next(new ApiError(403, "Access Denied: You do not have the required role"));
+      return next(res.json(new ApiError(403, null, "Access Denied: You do not have the required role")));
     }
     next();
   };

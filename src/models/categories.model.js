@@ -53,4 +53,18 @@ categorySchema.pre("findOneAndUpdate", function (next) {
     next();
 });
 
+
+
+categorySchema.virtual("subcategories", {
+    ref: "SubCategories", 
+    localField: "_id", 
+    foreignField: "category", 
+    justOne: false, 
+});
+categorySchema.set("toObject", { virtuals: true });
+categorySchema.set("toJSON", { virtuals: true });
+
+
+
+
 export const Categories = mongoose.model("Categories", categorySchema);

@@ -25,9 +25,13 @@ const industrySchema = new Schema(
         isDeleted: {
             type: Boolean,
             default: false,
-        },
+        }
     },
-    { timestamps: true }  
+    {   
+        timestamps: true,
+        toJSON: { virtuals: true, id: false }, 
+        toObject: { virtuals: true, id: false }, 
+     }  
 );
 
 industrySchema.pre("save", function (next) {
@@ -45,5 +49,17 @@ industrySchema.pre("findOneAndUpdate", function (next) {
     }
     next();
 });
+
+
+industrySchema.virtual("categories", {
+    ref: "Categories", 
+    localField: "_id", 
+    foreignField: "industry", 
+    justOne: false, 
+});
+industrySchema.set("toObject", { virtuals: true });
+industrySchema.set("toJSON", { virtuals: true });
+
+
 
 export const Industries = mongoose.model("Industries", industrySchema);

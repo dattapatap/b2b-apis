@@ -6,5 +6,4 @@ const convertSlug = (text) => {
         .replace(/-+/g, "-");           // Replace multiple hyphens with a single one
 };
 
-
 export { convertSlug };

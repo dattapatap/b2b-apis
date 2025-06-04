@@ -10,24 +10,28 @@ import bcrypt from "bcrypt"
 
 
 // Generate Access And Refresh Token
-const generateAccessAndRefereshTokens = async (userId) => {
+const generateAccessAndRefereshTokens = async (userId, device) => {
     try {
         const user = await User.findById(userId);
-        const accessToken = user.generateAccessToken();
-        const refreshToken = user.generateRefreshToken();
+        const accessToken = user.generateAccessToken('100d');
+        const refreshToken = user.generateRefreshToken('125d');
 
-        user.refreshToken = refreshToken;
-        await user.save({validateBeforeSave: false});
+        if (!user.refreshToken || !(user.refreshToken instanceof Map)) {
+            user.refreshToken = new Map();
+        }
+        user.refreshToken.set(device, refreshToken);
+        await user.save({ validateBeforeSave: false });
+            
+        return { accessToken, refreshToken };
 
-        return {accessToken, refreshToken};
     } catch (error) {
         console.log(error);        
         throw new ApiError(500, "Something went wrong while generating referesh and access token");
     }
 };
+ 
 
-
-const login = asyncHandler(async (req, res) => {
+export const login = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password ) {
         throw new ApiError(401, "All feild are mandatory");
@@ -51,7 +55,7 @@ const login = asyncHandler(async (req, res) => {
         return res.status(403).json({ message: 'Access Denied' });
     }
 
-    const {accessToken, refreshToken} = await generateAccessAndRefereshTokens(user._id);
+    const {accessToken, refreshToken} = await generateAccessAndRefereshTokens(user._id, 'web');
     const loggedInUser = await User.findOne({_id:user._id}).select("-password -refreshToken");
     const options = { httpOnly: true,  secure: true,};
 
@@ -63,7 +67,7 @@ const login = asyncHandler(async (req, res) => {
 });
 
 
-const logoutUser = asyncHandler(async (req, res) => {
+export const logoutUser = asyncHandler(async (req, res) => {
     await User.findByIdAndUpdate(
         req.user._id,
         {
@@ -88,9 +92,9 @@ const logoutUser = asyncHandler(async (req, res) => {
 });
 
 
-const refreshAccessToken = asyncHandler(async (req, res) => {
+export const refreshAccessToken = asyncHandler(async (req, res) => {
     const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken;
-
+    const deviceType = "web";
     if (!incomingRefreshToken) {
         throw new ApiError(401, "unauthorized request");
     }
@@ -113,16 +117,16 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
             secure: true,
         };
 
-        const {accessToken, newRefreshToken} = await generateAccessAndRefereshTokens(user._id);
+        const {accessToken, refreshToken} = await generateAccessAndRefereshTokens(user._id, 'web');
 
         return res
             .status(200)
             .cookie("accessToken", accessToken, options)
-            .cookie("refreshToken", newRefreshToken, options)
+            .cookie("refreshToken", refreshToken, options)
             .json(
                 new ApiResponse(
                     200,
-                    {accessToken, refreshToken: newRefreshToken},
+                    {accessToken, refreshToken},
                     "Access token refreshed",
                 ),
             );
@@ -132,12 +136,12 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 });
 
 
-const getCurrentUser = asyncHandler(async (req, res) => {
+export const getCurrentUser = asyncHandler(async (req, res) => {
     return res.status(200).json(new ApiResponse(200, req.user, "User fetched successfully"));
 });
 
 
-const updateAccountDetails = asyncHandler(async (req, res) => {
+export const updateAccountDetails = asyncHandler(async (req, res) => {
     const {fullName, email} = req.body;
 
     if (!fullName || !email) {
@@ -158,7 +162,7 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
     return res.status(200).json(new ApiResponse(200, user, "Account details updated successfully"));
 });
 
-const updateUserAvatar = asyncHandler(async (req, res) => {
+export const updateUserAvatar = asyncHandler(async (req, res) => {
     const avatarLocalPath = req.file?.path;
     if (!avatarLocalPath) {
         throw new ApiError(400, "Avatar file is missing");
@@ -185,7 +189,7 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
 });
 
 
-const forgetPassword = asyncHandler ( async( req, res ) =>{
+export const forgetPassword = asyncHandler ( async( req, res ) =>{
     let user = null;
     try {
         const { email} = req.body;
@@ -225,38 +229,40 @@ const forgetPassword = asyncHandler ( async( req, res ) =>{
     }
 })
 
-const setPassword = asyncHandler(async (req, res) => {
+export const setPassword = asyncHandler(async (req, res) => {
     const { email, otp, newPassword } = req.body;
-
-    if (!otp || !newPassword) {
+        
+    if (!otp?.trim() || !newPassword?.trim()) {
         throw new ApiError(400, 'All field are mandatory');
     }
 
     const user = await User.findOne({ email }).select('+otp +otpExpires');
     if (!user) {
-        return res.status(404).json({ message: 'User not found' });
+        throw new ApiError(400, 'User not found' );
     }
 
     const hashedOtp = crypto.createHash('sha256').update(otp).digest('hex');
     if (hashedOtp !== user.otp || Date.now() > user.otpExpires) {
-        return res.status(400).json({ message: 'Invalid or expired OTP' });
+        throw new ApiError(400, 'Invalid or expired OTP' );
     } 
     
     const hashedPass = await bcrypt.hash(newPassword, 10);
-    await User.updateOne( { email }, { password: hashedPass, otp: undefined, otpExpires: undefined });
-    
-    res.status(200).json(new ApiResponse(200 , "Password updated successfully"));
+    await User.findOneAndUpdate(
+        { email },
+        {
+            password: hashedPass,
+            otp: undefined,
+            otpExpires: undefined,
+            $unset: { refreshToken: 1 },
+        },
+        { new: true }
+    );
+    const options = { httpOnly: true, secure: true };
+
+    return res.status(200)
+        .clearCookie("accessToken", options)
+        .clearCookie("refreshToken", options)
+        .json(new ApiResponse(200 , {},  "Password updated successfully"));
 
 })
 
-
-export {
-    login,
-    logoutUser,
-    refreshAccessToken,
-    getCurrentUser,
-    updateAccountDetails,
-    updateUserAvatar,
-    forgetPassword,
-    setPassword,
-};

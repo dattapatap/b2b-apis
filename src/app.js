@@ -2,6 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import cookieParser from 'cookie-parser'
 import errorHandler from './middlewares/errorHandler.js';
+import requestLogger from './middlewares/requestLogger.js';
 
 const app = express()
 
@@ -21,21 +22,22 @@ app.use(express.json({limit: "16kb"}))
 app.use(express.urlencoded({extended: true, limit: "16kb"}))
 app.use(express.static("public"))
 app.use(cookieParser())
-app.use(errorHandler)
 
- 
 
-// Public routes
-import  publicRouter from './routes/public.routes.js'
-app.use("/api/v1", publicRouter)
+// Mobile App Routes
+import  applicationRouter from './routes/app/app.router.js'
+app.use("/api/app/v1", requestLogger('app'), applicationRouter);
+
+// // Web routes
+import  webRouter from './routes/web/web.routes.js'
+app.use("/api/web/v1", requestLogger('web'), webRouter);
 
 // Routes for admin
 import  adminRouter from './routes/admin.routes.js'
-app.use("/api/v1/admin", adminRouter)
+app.use("/api/admin/v1", requestLogger('admin'), adminRouter);
 
-// Router for User
-import  userRouter from './routes/user.routes.js'
-app.use("/api/v1/users", userRouter)
 
+
+app.use(errorHandler)
 
 export default app; 

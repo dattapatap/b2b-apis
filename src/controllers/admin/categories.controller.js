@@ -12,12 +12,52 @@ const allowedExtensions = [".jpg", ".jpeg", ".png"];
 const maxFileSize = 2 * 1024 * 1024;
 
 
+
+export const getAllCategory = asyncHandler(async (req, res) => {
+    const page = parseInt(req.query.page) || 1; 
+    const limit = parseInt(req.query.limit) || 20; 
+    const skip = (page - 1) * limit;
+
+    const categories = await Categories.find({ isDeleted: false }).populate("industry", '-__v -isDeleted -createdAt -updatedAt')
+                            .skip(skip).limit(limit).select("-isDeleted -createdAt -updatedAt -__v");
+    const totalCategory = await Categories.find({ isDeleted: false }).countDocuments();
+    const totalPages = Math.ceil(totalCategory / limit);
+
+    return res.status(200).json(
+        new ApiResponse( 200, {
+                categories,
+                pagination: {
+                    currentPage: page,
+                    totalPages,
+                    totalCategory,
+                    limit,
+                },
+            },
+            "Category fetched successfully",
+        ),
+    );
+    
+});
+
+// Get a Category by ID
+export const getCategoryById = asyncHandler(async (req, res) => {
+    const {id} = req.params;
+
+    const industry = await Categories.findById(id).populate("industry", '-__v -isDeleted -createdAt -updatedAt')
+                            .select("-isDeleted -createdAt -updatedAt -__v");
+    if (!industry) {
+        return res.status(400).json(new ApiError(400, null, "Category not found"));
+    }
+    return res.status(200).json(new ApiResponse(200, industry, "Category fetched successfully"));
+});
+
+
+
 // Create a new Category
 export const createCategory = asyncHandler(async (req, res) => {    
     const { name, heading, industry_id} = req.body;
     let { slug, sr_no } = req.body;    
     let imageUrl = null;
-    
     
     try {
         await CategorySchema.validateAsync({ name,slug, heading, sr_no, industry_id, operation: "create" },{ abortEarly: false });
@@ -43,7 +83,6 @@ export const createCategory = asyncHandler(async (req, res) => {
         const categories = await Categories.create({ name, slug,  heading, image: imageUrl, sr_no , industry: industry_id });
         return res.status(201).json(new ApiResponse(201, categories, "Category created successfully"));
 
-
     } catch (error) {      
         if (imageUrl) {
             await deleteFromCloudinary(imageUrl);
@@ -62,53 +101,20 @@ export const createCategory = asyncHandler(async (req, res) => {
 });
 
 
-export const getAllCategory = asyncHandler(async (req, res) => {
-    const page = parseInt(req.query.page) || 1; 
-    const limit = parseInt(req.query.limit) || 20; 
-    const skip = (page - 1) * limit;
-
-    const categories = await Categories.find({ isDeleted: false }).skip(skip).limit(limit).select("-isDeleted -createdAt -updatedAt -__v");
-    const totalCategory = await Categories.find({ isDeleted: false }).countDocuments();
-    const totalPages = Math.ceil(totalCategory / limit);
-
-    return res.status(200).json(
-        new ApiResponse( 200, {
-                categories,
-                pagination: {
-                    currentPage: page,
-                    totalPages,
-                    totalCategory,
-                    limit,
-                },
-            },
-            "Category fetched successfully",
-        ),
-    );
-    
-});
-
-// Get a Category by ID
-export const getCategoryById = asyncHandler(async (req, res) => {
-    const {id} = req.params;
-
-    const industry = await Categories.findById(id).populate("industry").select("-isDeleted -createdAt -updatedAt");
-    if (!industry) {
-        return res.status(400).json(new ApiError(400, null, "Category not found"));
-    }
-    return res.status(200).json(new ApiResponse(200, industry, "Category fetched successfully"));
-});
-
 // Update a Category
 export const updateCategory = asyncHandler(async (req, res) => {
     const { id } = req.params; 
-    const { name, heading, slug, sr_no } = req.body; 
+    const { name, heading, industry_id} = req.body;
+    let { slug, sr_no } = req.body;    
     let imageUrl = null;
-
+    
     try {
-        await CategorySchema.validateAsync( { id, name, slug, heading, sr_no, operation: "update" }, { abortEarly: false } );
 
-        const industry = await Categories.findOne({ _id: id, isDeleted: false });
-        if (!industry) {
+        await CategorySchema.validateAsync({ id, name, slug, heading, sr_no, industry_id, operation: "update" },{ abortEarly: false });
+        slug = convertSlug(slug);
+
+        const category = await Categories.findOne({ _id: id, isDeleted: false });
+        if (!category) {
             return res.status(404).json(new ApiResponse(404, null, "Category not found"));
         }
 
@@ -125,22 +131,23 @@ export const updateCategory = asyncHandler(async (req, res) => {
                 return res.status(400).json(new ApiResponse(400, null, "File size exceeds the 2MB limit."));
             }
 
-            if (industry.image) {
-                await deleteFromCloudinary(industry.image);
+            if (category.image) {
+                await deleteFromCloudinary(category.image);
             }
-            imageUrl = await uploadOnCloudinary(req.file.path, "industries");
+            imageUrl = await uploadOnCloudinary(req.file.path, "categories");
         }
 
         // Update the industry fields in the database
-        industry.name = name || industry.name;
-        industry.slug = updatedSlug || industry.slug;
-        industry.heading = heading || industry.heading;
-        industry.sr_no = sr_no || industry.sr_no;
-        industry.image = imageUrl || industry.image;
+        category.name = name || category.name;
+        category.slug = updatedSlug || category.slug;
+        category.heading = heading || category.heading;
+        category.sr_no = sr_no || category.sr_no;
+        category.image = imageUrl || category.image;
+        category.industry = industry_id || category.industry;
 
-        await industry.save();
+        await category.save();
 
-        return res.status(200).json(new ApiResponse(200, industry, "Category updated successfully"));
+        return res.status(200).json(new ApiResponse(200, category, "Category updated successfully"));
     } catch (error) {
         // Delete uploaded image if validation fails
         if (imageUrl) {
@@ -151,12 +158,10 @@ export const updateCategory = asyncHandler(async (req, res) => {
         if (error.isJoi) {
             return res.status(400).json(new ApiResponse(400, null, error.details.map((detail) => detail.message)));
         }
-
-        // Handle unexpected errors
-        console.error(error.message);
         return res.status(500).json(new ApiError(500, error.message));
     }
 });
+
 
 // Delete a city
 export const deleteCategory = asyncHandler(async (req, res) => {

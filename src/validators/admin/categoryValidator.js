@@ -45,8 +45,8 @@ const CategorySchema = Joi.object({
             if (operation === "update") {
                 query._id = { $ne: id }; 
             }
-
-            const existingInd = await Categories.findOne(query);
+            
+            const existingInd = await Categories.findOne(query);            
             if (existingInd) {
                 throw new Joi.ValidationError("Category with this slug already exists", [
                     {

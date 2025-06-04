@@ -17,7 +17,8 @@ const userSchema = new Schema(
 
         profile: {type: String, required: false},
         status: {type: String, enum: ["ACTIVE", "BLOCKED"], default: "ACTIVE"},
-        refreshToken: {type: String},
+        // refreshToken: {type: String},
+        refreshToken: { type: Map, of: String, default: {} },
 
         bank_details: [{type: Schema.Types.ObjectId, ref: "UserAddress"}],
         addresses: [{type: Schema.Types.ObjectId, ref: "UserAddress"}],
@@ -40,14 +41,12 @@ userSchema.pre("save", async function (next) {
     next()
 })
 
-userSchema.methods.isPasswordCorrect = async function(password){
-    console.log(password);
-    console.log(this.password);    
+userSchema.methods.isPasswordCorrect = async function(password){ 
     return await bcrypt.compare(password, this.password)
 }
 
 
-userSchema.methods.generateAccessToken = function () {
+userSchema.methods.generateAccessToken = function (days) {
     return jwt.sign(
         {
             _id: this._id,
@@ -56,19 +55,19 @@ userSchema.methods.generateAccessToken = function () {
         },
         process.env.ACCESS_TOKEN_SECRET,
         {
-            expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
+            expiresIn: days||process.env.ACCESS_TOKEN_EXPIRY,
         },
     );
 };
 
-userSchema.methods.generateRefreshToken = function () {
+userSchema.methods.generateRefreshToken = function (days) {    
     return jwt.sign(
         {
             _id: this._id,
         },
         process.env.REFRESH_TOKEN_SECRET,
         {
-            expiresIn: process.env.REFRESH_TOKEN_EXPIRY,
+            expiresIn: days || process.env.REFRESH_TOKEN_EXPIRY,
         },
     );
 };
