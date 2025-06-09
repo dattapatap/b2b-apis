@@ -1,0 +1,148 @@
+🧾 Basic Profile
+js
+Copy
+Edit
+{
+  seller_id,
+  name,                          // Seller full name
+  email,
+  mobile,
+  alternate_mobile,
+  password,                      // Hashed
+  profile_photo_url,
+  gender,
+  date_of_birth,
+  language_preference,
+  time_zone
+}
+🏢 Business Details
+js
+Copy
+Edit
+{
+  company_name,
+  company_logo_url,
+  company_type,                 // Proprietorship, Pvt Ltd, Partnership, etc.
+  business_category,           // Agriculture, Machinery, Apparel, etc.
+  established_year,
+  gst_number,
+  pan_number,
+  udyam_registration_number,
+  cin_number,
+  fssai_number,
+  business_license_url,
+  description,                 // About company
+  business_tagline,
+  working_hours: {
+    start_time,
+    end_time,
+    working_days // [Mon, Tue, ...]
+  }
+}
+🌐 Contact & Address
+js
+Copy
+Edit
+{
+  address: {
+    line1,
+    line2,
+    city,
+    state,
+    country,
+    pincode,
+    geo_location: {
+      lat,
+      lng
+    }
+  },
+  whatsapp_number,
+  website_url,
+  social_links: {
+    facebook,
+    twitter,
+    linkedin,
+    instagram,
+    youtube
+  }
+}
+📦 Products / Services
+js
+Copy
+Edit
+{
+  product_count,
+  categories,                   // List of product category IDs
+  subcategories,
+  featured_products: [product_id],
+  pricing_type,                 // Fixed, Negotiable
+  shipping_policy,
+  return_policy,
+  delivery_areas: [city/state],
+  delivery_partners: [Shiprocket, Delhivery, etc.]
+}
+📊 Leads & Analytics
+js
+Copy
+Edit
+{
+  total_leads,
+  monthly_leads,
+  lead_response_time,
+  lead_conversion_rate,
+  views_count,
+  click_through_rate,
+  inquiries_count,
+  ratings_avg,
+  reviews_count
+}
+📎 Documents & Verification
+js
+Copy
+Edit
+{
+  email_verified,
+  mobile_verified,
+  gst_verified,
+  kyc_verified,
+  kyc_documents: {
+    aadhaar_card_url,
+    pan_card_url,
+    gst_certificate_url,
+    address_proof_url,
+    cancelled_cheque_url
+  },
+  bank_details: {
+    account_holder_name,
+    account_number,
+    ifsc_code,
+    upi_id
+  }
+}
+📢 Marketing & Subscription
+js
+Copy
+Edit
+{
+  subscription_plan,            // Free, Basic, Premium
+  subscription_start_date,
+  subscription_end_date,
+  sms_alerts_enabled,
+  email_alerts_enabled,
+  whatsapp_alerts_enabled,
+  newsletter_subscribed
+}
+👨‍💻 Admin Metadata
+js
+Copy
+Edit
+{
+  status,                       // Active, Pending, Suspended
+  created_at,
+  updated_at,
+  last_login_at,
+  registered_ip,
+  referral_code,
+  referred_by,
+  assigned_sales_rep_id
+}

@@ -83,9 +83,19 @@ userSchema.pre(/^find/, function(next) {
             select: 'role_name', 
         },
     });
-
-
     next();
+});
+
+userSchema.set('toJSON', {
+    virtuals: true,
+    transform: function (doc, ret) {
+        if (Array.isArray(ret.roles)) {
+            ret.roles = ret.roles
+                .map(role => role?.role_id?.role_name)
+                .filter(Boolean); // Ensure no nulls
+        }
+        return ret;
+    }
 });
 
 

@@ -18,9 +18,7 @@ export const getAllCategory = asyncHandler(async (req, res) => {
     const totalPages = Math.ceil(tatalCategories / limit);
 
     return res.status(200).json(
-        new ApiResponse(
-            200,
-            {
+        new ApiResponse( 200,{
                 categories,
                 pagination: {
                     currentPage: page,
@@ -40,7 +38,6 @@ export const getCategoryById = asyncHandler(async (req, res) => {
 
     const industry = await Categories.findById(id)
                 .populate('subcategories', '-isDeleted -createdAt -updatedAt -__v')
-                // .populate("industry", "-__v -isDeleted -createdAt -updatedAt")
                 .select("-isDeleted -createdAt -updatedAt -__v");
     if (!industry) {
         return res.status(400).json(new ApiError(400, null, "Categories not found"));

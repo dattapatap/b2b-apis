@@ -44,9 +44,7 @@ const generateOTP = () => {
 
 // Send OTP
 export const sendOtp = asyncHandler(async (req, res) => {
-    const { mobile, role } = req.body;
-    console.log(req.body);
-    
+    const { mobile, role } = req.body;    
     const session = await mongoose.startSession();
 
     session.startTransaction();
@@ -127,11 +125,8 @@ export const verifyOtp = asyncHandler(async (req, res) => {
     }
 
     const {accessToken, refreshToken} = await generateAccessAndRefereshTokens(currUser._id, "mobile");
-    const loggedInUser = await User.findOne({_id:currUser._id}).select("-otp -otpExpires -refreshToken");
+    const loggedInUser = await User.findOne({_id:currUser._id}).select("-otp -otpExpires -refreshToken -__v -createdAt -updatedAt");
     const options = { httpOnly: true,  secure: true,};
-
-    console.log(loggedInUser);
-    
 
     return res.cookie("accessToken", accessToken, options)
                 .cookie("refreshToken", refreshToken, options)
@@ -191,7 +186,9 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
 
 
 export const getCurrentUser = asyncHandler(async (req, res) => {
-    return res.status(200).json(new ApiResponse(200, req.user, "User fetched successfully"));
+    let currUser = req.user ;
+    const loggedInUser = await User.findOne({_id:currUser._id}).select("-otp -otpExpires -refreshToken -__v -createdAt -updatedAt");
+    return res.status(200).json(new ApiResponse(200, loggedInUser, "User fetched successfully"));
 });
 
 
