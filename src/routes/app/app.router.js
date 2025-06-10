@@ -4,8 +4,13 @@ import {upload} from "../../middlewares/multer.middleware.js";
 import {verifyJWT} from "../../middlewares/auth.middleware.js";
 import {requireRole} from "../../middlewares/role.middleware.js";
 
+import * as flashScreensController from "../../controllers/app/flashScreens.controller.js";
+import * as homeBannersController from "../../controllers/app/homeBanner.controller.js";
+
+
 import * as userController from "../../controllers/app/user.controller.js";
 import * as citiesController from "../../controllers/app/cities.controller.js";
+
 import * as industriesController from "../../controllers/app/industries.controller.js";
 import * as categoriesController from "../../controllers/app/categories.controller.js";
 import * as subcategoriesController from "../../controllers/app/subcategories.controller.js";
@@ -21,6 +26,9 @@ import * as productSpecificationController from "../../controllers/app/seller/pr
 const router = Router();
 
 // Public routes
+router.get("/flash-screens",  flashScreensController.getScreens);
+router.get("/home-banners",  homeBannersController.getBanners);
+
 router.get("/cities",  citiesController.getAllCities);
 router.get("/citie/:id", citiesController.getCityById);
 
@@ -49,6 +57,9 @@ router.use(userAuthMiddleware);
 router.route("/user").get( userController.getCurrentUser);
 router.route("/logout").post( userController.logoutUser);
 router.route("/refresh-token").post( userController.refreshAccessToken);
+
+
+router.post("/assign-seller", userController.assignSellerRole);
 
 
 const seller = [verifyJWT, requireRole(["seller"])];

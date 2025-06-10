@@ -4,30 +4,39 @@ import bcrypt from "bcrypt"
 
 const userSchema = new Schema(
     {
+        seller_id: {type: String, required: false},
         name: {type: String, required: false},
-        designation: {type: String, required: false},
-        mobile: {type: String, required: true, unique: true, minlength: 10, maxlength: 10},
-        alt_email: {type: String, required: false},
-
         email: {type: String, required: false},
-        password: String,
+        mobile: {type: String, required: true, unique: true, minlength: 10, maxlength: 10},
+        
+        alt_email: {type: String, required: false},
         alt_mobile: {type: String, required: false, min: 10, max: 10},
+        
+        password: String,
+        
+        designation: {type: String, required: false},
+        gender : { type: String, required : false},
+        date_of_birth : { type: Date, required : false},
+
 
         isVerified: {type: Boolean, default: false},
 
         profile: {type: String, required: false},
+
         status: {type: String, enum: ["ACTIVE", "BLOCKED"], default: "ACTIVE"},
-        // refreshToken: {type: String},
+
         refreshToken: { type: Map, of: String, default: {} },
 
-        bank_details: [{type: Schema.Types.ObjectId, ref: "UserAddress"}],
-        addresses: [{type: Schema.Types.ObjectId, ref: "UserAddress"}],
+        business_details : { type: mongoose.Schema.Types.ObjectId, ref: 'BusinessDetails'},
+
+        bank_details: {type: Schema.Types.ObjectId, ref: "UserAddress"},
+        addresses: {type: Schema.Types.ObjectId, ref: "UserAddress"},
         roles: [{type: mongoose.Schema.Types.ObjectId, ref: "UserRoles"}],
 
         otp: {type: String, required: false},
         otpExpires: {type: Date, required: false},
         
-    },    
+    },  
     {
         timestamps: true,
     },

@@ -7,7 +7,7 @@ const fileRule = (file, maxFileSize, allowedExtensions ) => {
 
   const fileExtension = file.originalname.substring(file.originalname.lastIndexOf("."));
   if (!allowedExtensions.includes(fileExtension)) {
-    return { isValid: false, message: "Invalid file extension. Only .jpg, .jpeg, and .png are allowed." };
+    return { isValid: false, message: "Invalid file extension. Only .jpg, .jpeg, .webp and .png are allowed." };
   }
 
   if (file.size > maxFileSize) {

@@ -10,6 +10,8 @@ import * as productTypeController from "../controllers/admin/productType.control
 import * as specificationController from "../controllers/admin/specifications.controller.js"
 import * as additionalController from "../controllers/admin/additionals.controller.js"
 import * as groupsController from "../controllers/admin/groups.controller.js"
+import * as appFlashController from "../controllers/admin/App/flashScreen.controller.js"
+import * as appBannersController from "../controllers/admin/App/appBanner.controller.js"
 
 
 import {upload} from "../middlewares/multer.middleware.js";
@@ -90,9 +92,15 @@ router.route("/product-additional-details/:id").get(additionalController.getFiel
                 .put(additionalController.updateField).delete(additionalController.deleteField);
 
 router.route("/category-groups").get(groupsController.getAllGroups).post(groupsController.createGroup);
-router.route("/category-groups/:id").get(groupsController.getGroupById)
-                .put(groupsController.updateGroup).delete(groupsController.deleteGroup);
+router.route("/category-groups/:id").get(groupsController.getGroupById).put(groupsController.updateGroup).delete(groupsController.deleteGroup);
 
+router.route("/flash-screens").get(appFlashController.getAllFlashBanners).post(upload.single("image"), appFlashController.createFlashBanner);
+router.route("/flash-screens/:id").get(appFlashController.getFlashBannerById).put(upload.single("image"), appFlashController.updateFlashBanner).delete(appFlashController.deleteFlashBanner);
+router.route("/flash-screens/:id/status").patch(appFlashController.changeFlashBannerStatus);
+
+router.route("/app-banners").get(appBannersController.getAllAppBanners).post(upload.single("image"), appBannersController.createAppBanner);
+router.route("/app-banners/:id").get(appBannersController.getAppBannerById).put(upload.single("image"), appBannersController.updateAppBanner).delete(appBannersController.deleteAppBanner);
+router.route("/app-banners/:id/status").patch(appBannersController.changeAppBannerStatus);
 
 
 export default router;

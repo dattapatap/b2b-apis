@@ -44,19 +44,17 @@ const generateOTP = () => {
 
 // Send OTP
 export const sendOtp = asyncHandler(async (req, res) => {
-    const { mobile, role } = req.body;    
+    const { mobile } = req.body;    
     const session = await mongoose.startSession();
 
     session.startTransaction();
     
     const loginSchema = Joi.object({
         mobile: Joi.string().required().min(10).max(10),
-        role: Joi.string().required().insensitive().valid("buyer", "seller"),
     });
 
-    await loginSchema.validateAsync({ mobile, role }, { abortEarly: false });
-
-    let roleId = await Roles.findOne({ role_name: role });
+    await loginSchema.validateAsync({ mobile }, { abortEarly: false });
+    let roleId = await Roles.findOne({ role_name: "buyer" });
 
     let currUser = await User.findOne({ mobile }).session(session);
     if (!currUser) {
@@ -71,7 +69,7 @@ export const sendOtp = asyncHandler(async (req, res) => {
     }
 
     const otp = generateOTP();
-    const otpExpires = dayjs().tz().add(10, "minute").toDate();
+    const otpExpires = dayjs().tz().add(20, "minute").toDate();
 
     currUser.otp = otp;
     currUser.otpExpires = otpExpires;
@@ -87,18 +85,15 @@ export const sendOtp = asyncHandler(async (req, res) => {
 
 // Verify OTP
 export const verifyOtp = asyncHandler(async (req, res) => {
-    const {mobile, otp, role} = req.body;
+    const {mobile, otp} = req.body;
 
     const loginSchema = Joi.object({
         mobile: Joi.string().required().min(10).max(10),
-        role: Joi.string().required().insensitive().valid("buyer", "seller"),
         otp: Joi.string().required().min(6).max(6),
-    });  
-          
-    await loginSchema.validateAsync({  mobile, role, otp },{ abortEarly: false });
+    });            
+    await loginSchema.validateAsync({  mobile, otp },{ abortEarly: false });
 
     let currUser = await User.findOne({mobile: mobile});
-
     if (!currUser) {
        throw new ApiError(404, "User not found" );
     }
@@ -111,12 +106,23 @@ export const verifyOtp = asyncHandler(async (req, res) => {
         throw new ApiError(400,  "Invalid OTP");
     }
 
-    const roleDoc = await Roles.findOne({ role_name: role });
+    const {accessToken, refreshToken} = await generateAccessAndRefereshTokens(currUser._id, "mobile");
+    const loggedInUser = await User.findOne({_id:currUser._id}).select("-otp -otpExpires -refreshToken -__v -createdAt -updatedAt");
+    const options = { httpOnly: true,  secure: true,};
+
+    return res.cookie("accessToken", accessToken, options).cookie("refreshToken", refreshToken, options)
+                .json( new ApiResponse( 200, {user: loggedInUser, accessToken, refreshToken},  "User logged In Successfully"));
+});
+
+
+export const assignSellerRole = asyncHandler( async (req, res ) => {
+    let currUser = req.user ;
+
+    const roleDoc = await Roles.findOne({ role_name: 'seller' });
     if (!roleDoc) {
         throw new ApiError(400,  "Invalid role");
     }
 
-    // check if user already has the role
     const existingUserRole = await UserRoles.findOne({ role_id: roleDoc._id, user_id: currUser._id,});
     if (!existingUserRole) {
         const userRole = await UserRoles.create({ role_id: roleDoc._id, assignedAt: dayjs().tz().toDate(), user_id: currUser._id, });
@@ -124,21 +130,9 @@ export const verifyOtp = asyncHandler(async (req, res) => {
         await currUser.save();
     }
 
-    const {accessToken, refreshToken} = await generateAccessAndRefereshTokens(currUser._id, "mobile");
     const loggedInUser = await User.findOne({_id:currUser._id}).select("-otp -otpExpires -refreshToken -__v -createdAt -updatedAt");
-    const options = { httpOnly: true,  secure: true,};
-
-    return res.cookie("accessToken", accessToken, options)
-                .cookie("refreshToken", refreshToken, options)
-                .json(
-                    new ApiResponse(
-                        200,
-                        {user: loggedInUser, accessToken, refreshToken},
-                        "User logged In Successfully",
-                    ),
-                );
-});
-
+    return res.status(200).json(new ApiResponse(200, loggedInUser, "Seller role has been assigned successfully"));
+})
 
 
 export const refreshAccessToken = asyncHandler(async (req, res) => {

@@ -116,18 +116,12 @@ export const updateBrand = asyncHandler(async (req, res) => {
 
         return res.status(200).json(new ApiResponse(200, brand, "Industry updated successfully"));
     } catch (error) {
-        // Delete uploaded image if validation fails
         if (imageUrl) {
             await deleteFromCloudinary(imageUrl);
         }
-
-        // Handle Joi validation errors
         if (error.isJoi) {
             return res.status(400).json(new ApiResponse(400, null, error.details.map((detail) => detail.message)));
         }
-
-        // Handle unexpected errors
-        console.error(error.message);
         return res.status(500).json(new ApiError(500, error.message));
     }
 });
