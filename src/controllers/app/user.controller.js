@@ -52,11 +52,10 @@ export const sendOtp = asyncHandler(async (req, res) => {
     const loginSchema = Joi.object({
         mobile: Joi.string().required().min(10).max(10),
     });
-
     await loginSchema.validateAsync({ mobile }, { abortEarly: false });
-    let roleId = await Roles.findOne({ role_name: "buyer" });
 
-    let currUser = await User.findOne({ mobile }).session(session);
+    let roleId = await Roles.findOne({ role_name: "buyer" });
+    let currUser = await User.findOne({ mobile :mobile}).session(session);
     if (!currUser) {
         currUser = await User.create([{ mobile }], { session });
         currUser = currUser[0];

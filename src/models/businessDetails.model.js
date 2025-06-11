@@ -2,7 +2,7 @@ import mongoose, {Schema} from "mongoose";
 
 const BusinessDetailsSchema = new Schema(
     {
-        company_name: {type: String, required: false},
+        company_name: {type: String, required: true},
         company_logo_url: {type: String, required: false},
         company_type: {
             type: String,
@@ -29,26 +29,44 @@ const BusinessDetailsSchema = new Schema(
                 },
             ],
         },
+
+
+
+
     },
-    {timestamps: true},
-    {_id: false},
+    {
+        timestamps: true,
+        versionKey: false
+    },
 );
 
-categorySchema.pre("save", function (next) {
+BusinessDetailsSchema.pre("save", function (next) {
     if (this.company_name) {
-        this.company_name = this.company_name.toLowerCase();
+        this.company_name = this.company_name.toUpperCase();
     }
     next();
 });
 
-categorySchema.pre("findOneAndUpdate", function (next) {
+BusinessDetailsSchema.pre("findOneAndUpdate", function (next) {
     const update = this.getUpdate();
     if (update.company_name) {
-        update.company_name = update.company_name.toLowerCase();
+        update.company_name = update.company_name.toUpperCase();
         this.setUpdate(update);
     }
     next();
 });
+
+
+
+BusinessDetailsSchema.set('toJSON', {
+  transform: function (doc, ret) {
+    delete ret.__v;
+    ret.id = ret._id;  
+    delete ret._id; 
+    return ret;
+  }
+});
+
 
 
 export const BusinessDetails = mongoose.model("BusinessDetails", BusinessDetailsSchema);

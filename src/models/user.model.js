@@ -22,17 +22,18 @@ const userSchema = new Schema(
         isVerified: {type: Boolean, default: false},
 
         profile: {type: String, required: false},
-
         status: {type: String, enum: ["ACTIVE", "BLOCKED"], default: "ACTIVE"},
 
+        
+        business_details : { type: Schema.Types.ObjectId, ref: 'BusinessDetails'},
+        
+        addresses: [{type: Schema.Types.ObjectId, ref: "UserAddress" ,  required: false }]  ,
+        bank_details : { type: Schema.Types.ObjectId, ref: "UserBank", required: false },
+        
+        
+        roles: [{type: mongoose.Schema.Types.ObjectId, ref: "UserRoles", default: [],}],
+
         refreshToken: { type: Map, of: String, default: {} },
-
-        business_details : { type: mongoose.Schema.Types.ObjectId, ref: 'BusinessDetails'},
-
-        bank_details: {type: Schema.Types.ObjectId, ref: "UserAddress"},
-        addresses: {type: Schema.Types.ObjectId, ref: "UserAddress"},
-        roles: [{type: mongoose.Schema.Types.ObjectId, ref: "UserRoles"}],
-
         otp: {type: String, required: false},
         otpExpires: {type: Date, required: false},
         
@@ -94,6 +95,15 @@ userSchema.pre(/^find/, function(next) {
     });
     next();
 });
+
+// userSchema.virtual('business_details', {
+//   ref: 'BusinessDetails',
+//   localField: '_id',
+//   foreignField: 'user_id',
+//   justOne: true,
+// });
+
+
 
 userSchema.set('toJSON', {
     virtuals: true,

@@ -6,7 +6,7 @@ import {requireRole} from "../../middlewares/role.middleware.js";
 
 import * as flashScreensController from "../../controllers/app/flashScreens.controller.js";
 import * as homeBannersController from "../../controllers/app/homeBanner.controller.js";
-
+import * as profileController from "../../controllers/app/seller/profile.controller.js";
 
 import * as userController from "../../controllers/app/user.controller.js";
 import * as citiesController from "../../controllers/app/cities.controller.js";
@@ -51,6 +51,7 @@ router.get("/brand/:id", brandsController.getBrandById);
 router.post("/login", userController.sendOtp);
 router.post("/verify-otp", userController.verifyOtp);
 
+// Authenticated User Routes
 const userAuthMiddleware = [verifyJWT, requireRole(["buyer", "seller"])];
 router.use(userAuthMiddleware);
 
@@ -61,8 +62,13 @@ router.route("/refresh-token").post( userController.refreshAccessToken);
 
 router.post("/assign-seller", userController.assignSellerRole);
 
-
 const seller = [verifyJWT, requireRole(["seller"])];
+
+//New Seller Sign Up Stages 
+router.post("/seller/profile/company-info" , seller, profileController.updateCompanyInfo);
+router.post("/seller/profile/contact-person" , seller, profileController.updateCompanyInfo);
+
+
 // Product APIs
 router.get("/seller/products/active" , seller, productController.getActiveProducts);
 router.get("/seller/products/deactive" , seller, productController.getInactiveProducts);
