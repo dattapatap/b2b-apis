@@ -33,8 +33,10 @@ export async function findSubcategories(productName) {
 
                 if (
                     partialRegex.test(productName) ||
-                    isSimilar(keyword, productName) ||
-                    hasCommonNGrams(keyword, productName)
+                    isSimilar(keyword, productName)
+                    // ||
+                    // hasCommonNGrams(keyword, productName)
+                    
                 ) {
                     const subcategories = await SubCategories.find({
                         group: group._id,
@@ -43,6 +45,8 @@ export async function findSubcategories(productName) {
 
                     subcategories.forEach(subcategory => {
                         if (!seenSubcategoryIds.has(subcategory._id.toString())) {
+                            console.log(subcategory);
+                            
                             matchedSubcategories.push(subcategory);
                             seenSubcategoryIds.add(subcategory._id.toString());
                         }

@@ -39,7 +39,7 @@ export const login = asyncHandler(async (req, res) => {
     
     const user = await User.findOne({ email }).populate('roles');
     if (!user) {
-        throw new ApiError(404, "User does not exist")
+        throw new ApiError(404, "User does not exist!")
     }
        
     const isPasswordValid = await user.isPasswordCorrect(password)
@@ -56,7 +56,7 @@ export const login = asyncHandler(async (req, res) => {
     }
 
     const {accessToken, refreshToken} = await generateAccessAndRefereshTokens(user._id, 'web');
-    const loggedInUser = await User.findOne({_id:user._id}).select("-password -refreshToken");
+    const loggedInUser = await User.findOne({_id:user._id}).select("-password -refreshToken -otp -otpExpires -passwordResetExpires -passwordResetToken -__v -updatedAt -_id");
     const options = { httpOnly: true,  secure: true,};
 
     return res.status(200).cookie("accessToken", accessToken, options)
@@ -108,7 +108,7 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
             throw new ApiError(401, "Invalid refresh token");
         }
 
-        if (incomingRefreshToken !== user?.refreshToken) {
+        if (incomingRefreshToken !== user?.refreshToken?.get("web")) {
             throw new ApiError(401, "Refresh token is expired or used");
         }
 
@@ -133,6 +133,7 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
     } catch (error) {
         throw new ApiError(401, error?.message || "Invalid refresh token");
     }
+
 });
 
 

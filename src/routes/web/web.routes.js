@@ -47,9 +47,10 @@ router.post("/verify-otp", userController.verifyOtp);
 const adminAuthMiddleware = [verifyJWT, requireRole(["buyer", "seller"])];
 router.use(adminAuthMiddleware);
 
+router.route("/refresh-token").post( userController.refreshAccessToken);
+
 router.route("/user").get(userController.getCurrentUser);
 router.route("/logout").post(  userController.logoutUser);
-router.route("/refresh-token").post( userController.refreshAccessToken);
 
 // Product APIs
 router.route("/buyer/product/create").post( productController.createProduct);

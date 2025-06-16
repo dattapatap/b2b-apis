@@ -2,28 +2,11 @@ import mongoose from "mongoose";
 
 const productSchema = new mongoose.Schema(
     {
-        product_id: {
-            type: String,
-        },
-        seller_id: {
-            required: true,
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "User",
-        },
-        name: {
-            type: String,
-            required: true,
-            trim: true,
-            index: true,
-        },
-        slug: {
-            type: String,
-            index: true,
-        },
-        description: {
-            type: String,
-        },
-
+        product_id: { type: String,   },
+        seller_id: {    required: true,  type: mongoose.Schema.Types.ObjectId,     ref: "User",  },
+        name: {       type: String,      required: true,      trim: true,      index: true,   },
+        slug: {     type: String,        index: true,     },
+        description: {      type: String,     },
         industry: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Industries",

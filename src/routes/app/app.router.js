@@ -52,21 +52,18 @@ router.post("/login", userController.sendOtp);
 router.post("/verify-otp", userController.verifyOtp);
 
 // Authenticated User Routes
+router.route("/refresh-token").post( userController.refreshAccessToken);
 const userAuthMiddleware = [verifyJWT, requireRole(["buyer", "seller"])];
 router.use(userAuthMiddleware);
 
 router.route("/user").get( userController.getCurrentUser);
-router.route("/logout").post( userController.logoutUser);
-router.route("/refresh-token").post( userController.refreshAccessToken);
-
-
 router.post("/assign-seller", userController.assignSellerRole);
+router.route("/logout").post( userController.logoutUser);
 
 const seller = [verifyJWT, requireRole(["seller"])];
 
 //New Seller Sign Up Stages 
 router.post("/seller/profile/company-info" , seller, profileController.updateCompanyInfo);
-router.post("/seller/profile/contact-person" , seller, profileController.updateCompanyInfo);
 
 
 // Product APIs

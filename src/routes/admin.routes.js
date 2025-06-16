@@ -21,18 +21,18 @@ import {requireRole} from "../middlewares/role.middleware.js";
 const router = Router();
 
 // Public routes
-router.post("/login", upload.none(), adminController.login);
+router.post("/sign-in", upload.none(), adminController.login);
 router.post("/forget-password", adminController.forgetPassword);
 router.post("/set-password", adminController.setPassword);
 
 // Protected routes
-router.post("/logout", verifyJWT, adminController.logoutUser);
 
+router.post("/refresh-token", adminController.refreshAccessToken);
 const adminAuthMiddleware = [verifyJWT, requireRole(["admin"])];
 
 router.use(adminAuthMiddleware);
+router.post("/sign-out", verifyJWT, adminController.logoutUser);
 
-router.post("/refresh-token", adminController.refreshAccessToken);
 router.get("/user", adminController.getCurrentUser);
 router.patch("/update-account", adminController.updateAccountDetails);
 router.patch("/avatar", upload.single("avatar"), adminController.updateUserAvatar);

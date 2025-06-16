@@ -5,6 +5,8 @@ import bcrypt from "bcrypt"
 const userSchema = new Schema(
     {
         seller_id: {type: String, required: false},
+        roles: [{type: mongoose.Schema.Types.ObjectId, ref: "UserRoles", default: [],}],
+        
         name: {type: String, required: false},
         email: {type: String, required: false},
         mobile: {type: String, required: true, unique: true, minlength: 10, maxlength: 10},
@@ -12,27 +14,24 @@ const userSchema = new Schema(
         alt_email: {type: String, required: false},
         alt_mobile: {type: String, required: false, min: 10, max: 10},
         
-        password: String,
         
         designation: {type: String, required: false},
         gender : { type: String, required : false},
         date_of_birth : { type: Date, required : false},
 
-
+        seller_type : { type : String, required : false},  // Free listing/Paid/..
         isVerified: {type: Boolean, default: false},
-
+        
         profile: {type: String, required: false},
         status: {type: String, enum: ["ACTIVE", "BLOCKED"], default: "ACTIVE"},
-
+        
         
         business_details : { type: Schema.Types.ObjectId, ref: 'BusinessDetails'},
-        
         addresses: [{type: Schema.Types.ObjectId, ref: "UserAddress" ,  required: false }]  ,
         bank_details : { type: Schema.Types.ObjectId, ref: "UserBank", required: false },
         
-        
-        roles: [{type: mongoose.Schema.Types.ObjectId, ref: "UserRoles", default: [],}],
-
+            
+        password:{ type: String, required : false }, //only for admin users
         refreshToken: { type: Map, of: String, default: {} },
         otp: {type: String, required: false},
         otpExpires: {type: Date, required: false},

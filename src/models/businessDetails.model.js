@@ -4,6 +4,10 @@ const BusinessDetailsSchema = new Schema(
     {
         company_name: {type: String, required: true},
         company_logo_url: {type: String, required: false},
+
+        contact_name: { type: String, required: false},
+        contact_no: { type: String, required: false},
+
         company_type: {
             type: String,
             enum: ["Proprietorship", "Pvt Ltd", "Partnership", "LLP", "Other"],
@@ -29,9 +33,6 @@ const BusinessDetailsSchema = new Schema(
                 },
             ],
         },
-
-
-
 
     },
     {

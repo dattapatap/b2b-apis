@@ -1,24 +1,20 @@
-🧾 Basic Profile
-js
-Copy
-Edit
+Basic Profile
 {
   seller_id,
-  name,                          // Seller full name
+  name,          
   email,
   mobile,
   alternate_mobile,
-  password,                      // Hashed
+  password,
   profile_photo_url,
   gender,
   date_of_birth,
   language_preference,
   time_zone
 }
-🏢 Business Details
-js
-Copy
-Edit
+
+
+Business Details
 {
   company_name,
   company_logo_url,
@@ -39,10 +35,9 @@ Edit
     working_days // [Mon, Tue, ...]
   }
 }
-🌐 Contact & Address
-js
-Copy
-Edit
+
+
+Contact & Address
 {
   address: {
     line1,
@@ -56,6 +51,11 @@ Edit
       lng
     }
   },
+  contact_person,
+  landline_1,
+  landline_2,
+  mobile_no_1,
+  mobile_no_2,
   whatsapp_number,
   website_url,
   social_links: {
@@ -66,25 +66,22 @@ Edit
     youtube
   }
 }
-📦 Products / Services
-js
-Copy
-Edit
+
+
+Products / Services
 {
   product_count,
-  categories,                   // List of product category IDs
+  categories,             
   subcategories,
   featured_products: [product_id],
-  pricing_type,                 // Fixed, Negotiable
+  pricing_type,            
   shipping_policy,
   return_policy,
   delivery_areas: [city/state],
   delivery_partners: [Shiprocket, Delhivery, etc.]
 }
-📊 Leads & Analytics
-js
-Copy
-Edit
+
+Leads & Analytics
 {
   total_leads,
   monthly_leads,
@@ -96,10 +93,9 @@ Edit
   ratings_avg,
   reviews_count
 }
-📎 Documents & Verification
-js
-Copy
-Edit
+
+
+Documents & Verification
 {
   email_verified,
   mobile_verified,
@@ -119,12 +115,11 @@ Edit
     upi_id
   }
 }
-📢 Marketing & Subscription
-js
-Copy
-Edit
+
+
+Marketing & Subscription
 {
-  subscription_plan,            // Free, Basic, Premium
+  subscription_plan,   
   subscription_start_date,
   subscription_end_date,
   sms_alerts_enabled,
@@ -132,12 +127,10 @@ Edit
   whatsapp_alerts_enabled,
   newsletter_subscribed
 }
-👨‍💻 Admin Metadata
-js
-Copy
-Edit
+
+Admin Metadata
 {
-  status,                       // Active, Pending, Suspended
+  status,                    
   created_at,
   updated_at,
   last_login_at,

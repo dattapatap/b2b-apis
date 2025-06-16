@@ -1,59 +1,99 @@
-import {asyncHandler} from "../../../utils/asyncHandler.js";
-import {ApiError} from "../../../utils/ApiError.js";
+import { asyncHandler } from "../../../utils/asyncHandler.js";
+import { ApiError } from "../../../utils/ApiError.js";
+import { ApiResponse } from "../../../utils/ApiResponse.js";
 
 import {User} from "../../../models/user.model.js";
-import {uploadOnCloudinary} from "../../../utils/cloudinary.js";
-import {ApiResponse} from "../../../utils/ApiResponse.js";
 import { BusinessDetails } from "../../../models/businessDetails.model.js";
+import { findSubcategories } from '../../../utils/helper.js';
 
 import Joi from "joi";
 import mongoose from "mongoose";
+import { Product } from "../../../models/product.model.js";
+import slugify from "slugify";
+import { SubCategories } from "../../../models/subCategories.model.js";
 
 
 export const updateCompanyInfo = asyncHandler ( async( req, resp) => {
-    const { company_name, gst_no } = req.body;    
+    const { company_name, gst_no, product_name, product_price, contact_name, whatsapp } = req.body;    
     const loggedUser = req.user._id;
-
     
     const schema = Joi.object({
-        company_name: Joi.string()
-            .regex(/^[a-zA-Z0-9&\- ]{2,100}$/)
-            .required()
-            .messages({
-                'string.pattern.base': 'Company name must contain only letters, numbers, spaces, & and -',
-                'string.empty': 'Company name is required',
-            }),
-
-        gst_no: Joi.string()
-            .regex(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/)
-            .required()
-            .messages({
-                'string.pattern.base': 'GST number format is invalid (e.g. 29AAKCD5205D1ZU)',
-                'string.empty': 'GST number is required',
-            }),
+        company_name: Joi.string().pattern(/^[a-zA-Z0-9&\- ]{2,100}$/).required()
+            .messages({'string.pattern.base': 'Company name must contain only letters, numbers, spaces, & and -', 'string.empty': 'Company name is required',}),
+       
+        gst_no: Joi.string().regex(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/).required()
+            .messages({'string.pattern.base': 'GST number format is invalid (e.g. 29AAKCD5205D1ZU)', 'string.empty': 'GST number is required', }),
+            
+        contact_name: Joi.string().min(3).max(50).pattern(/^[a-zA-Z0-9&\- ]+$/).required(),
+        whatsapp: Joi.string().pattern(/^[6-9][0-9]{9}$/).required().messages({'string.pattern.base': 'Mobile number must be a 10-digit number starting with 6-9'}),
+        product_name: Joi.string().min(3).max(100).pattern(/^[a-zA-Z0-9&\- ]{2,100}$/).required(),
+        product_price : Joi.number().positive().precision(2).required(),
     });
-    await schema.validateAsync({ company_name, gst_no }, { abortEarly: false });
+
+    await schema.validateAsync({ company_name, gst_no, contact_name, whatsapp, product_name, product_price }, { abortEarly: false });
  
     const session = await mongoose.startSession();
-     try {
+    try {
         session.startTransaction();
 
         const user = await User.findById(loggedUser).session(session);
         let businessDetails;
-
         if (user.business_details) {
-            // Update existing
-            businessDetails = await BusinessDetails.findById(user.business_details).session(session);
-            businessDetails.company_name = company_name;
-            businessDetails.gst_number = gst_no;
-            await businessDetails.save({ session });
+            if (businessDetails) {
+                businessDetails = await BusinessDetails.findById(user.business_details).session(session);
+                businessDetails.company_name = company_name;
+                businessDetails.gst_number = gst_no;
+                businessDetails.contact_name = contact_name;
+                businessDetails.contact_no = whatsapp;
+                await businessDetails.save({ session });
+            }{
+                businessDetails = await BusinessDetails.create([
+                    {
+                        company_name:company_name,
+                        gst_number:gst_no,
+                        contact_name:gst_no,   
+                        contact_no:whatsapp
+                    }
+                ], { session });
+                user.business_details = businessDetails[0]._id;
+                await user.save({ session });
+            }
         } else {
             // Create new
-            businessDetails = await BusinessDetails.create([{ company_name:company_name, gst_number:gst_no,}], { session });
+            businessDetails = await BusinessDetails.create([
+                {
+                     company_name:company_name,
+                     gst_number:gst_no,
+                     contact_name:gst_no,   
+                     contact_no:whatsapp
+                }
+            ], { session });
             user.business_details = businessDetails[0]._id;
             await user.save({ session });
         }
         
+        const matchedSubcategories = await findSubcategories(product_name);
+
+        const slug = slugify(product_name, { lower: true }) + "-" + Date.now();
+        const productData = {
+            name: product_name,
+            seller_id : loggedUser,
+            slug : slug,
+            price : product_price,
+        };
+    
+        // Single Subcategory - Assign to Product
+        if (matchedSubcategories.length > 0) {
+            productData.subcategories = matchedSubcategories.map(sub => sub._id);
+        }else{
+            const uncategory =  await SubCategories.findOne({ _id:"684fa86ae994766e539fcef0", name: "Uncategoriesed" }).select('name _id category');
+            productData.subcategories = uncategory._id;
+        }
+    
+        const newProduct = new Product(productData);
+        await newProduct.save();
+    
+
         await session.commitTransaction();
         session.endSession();
 
@@ -114,16 +154,6 @@ export const updateContactPerson = asyncHandler ( async( req, resp)=>{
             await businessDetails.save({ session });
         } else {
             // Create new
-
-            30000
-             4500
-             5500
-             2800
-             8500
-             3000
-    
-
-
             businessDetails = await BusinessDetails.create([{ company_name:company_name, gst_number:gst_no,}], { session });
             user.business_details = businessDetails[0]._id;
             await user.save({ session });
