@@ -1,4 +1,5 @@
 import mongoose, { Schema } from "mongoose";
+import MongooseDelete from "mongoose-delete";
 
 const industrySchema = new Schema(
     {
@@ -22,34 +23,21 @@ const industrySchema = new Schema(
             type: Number,
             required: true,
         },
-        isDeleted: {
-            type: Boolean,
-            default: false,
-        }
     },
-    {   
-        timestamps: true,
-        toJSON: { virtuals: true, id: false }, 
-        toObject: { virtuals: true, id: false }, 
-     }  
+    {  timestamps: true }  
 );
+
+// Capitalize the first letter of each word
+function capitalizeWords(str) {
+    return str.replace(/\b\w/g, char => char.toUpperCase());
+}
 
 industrySchema.pre("save", function (next) {
     if (this.name) {
-        this.name = this.name.toLowerCase();
+        this.name = capitalizeWords(this.name);
     }
     next();
 });
-
-industrySchema.pre("findOneAndUpdate", function (next) {
-    const update = this.getUpdate();
-    if (update.name) {
-        update.name = update.name.toLowerCase();
-        this.setUpdate(update);
-    }
-    next();
-});
-
 
 industrySchema.virtual("categories", {
     ref: "Categories", 
@@ -57,8 +45,16 @@ industrySchema.virtual("categories", {
     foreignField: "industry", 
     justOne: false, 
 });
-industrySchema.set("toObject", { virtuals: true });
-industrySchema.set("toJSON", { virtuals: true });
+
+industrySchema.plugin(MongooseDelete, { deleted: true, overrideMethods: 'all' });
+industrySchema.set("toJSON", {
+    transform: function (doc, ret) {
+        delete ret.__v;
+        ret.id = ret._id;
+        delete ret._id;
+        return ret;
+    },
+});
 
 
 

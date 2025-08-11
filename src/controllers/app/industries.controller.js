@@ -12,7 +12,7 @@ export const getAllIndustry = asyncHandler(async (req, res) => {
     const skip = (page - 1) * limit;
 
     const industry = await Industries.find({isDeleted: false})
-        .skip(skip).limit(limit).select("-isDeleted -createdAt -updatedAt -__v");
+        .skip(skip).limit(limit).select("deleted -createdAt -updatedAt -__v");
     console.log(industry);
 
     const totalIndustry = await Industries.find({isDeleted: false}).countDocuments();

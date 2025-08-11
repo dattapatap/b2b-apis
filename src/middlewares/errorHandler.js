@@ -9,13 +9,23 @@ const errorHandler = (err, req, res, next) => {
     if (err.isJoi) {
         statusCode = 422;
         message = "Invalid input data";
-        errors = err.details.map((detail) => detail.message);
+        errors = {};
+
+        err.details.forEach((detail) => {
+            const key = detail.path.join('.');
+            errors[key] = detail.message.replace(/\"/g, '');
+        });
     }
 
     else if (err.name === "ValidationError") {
         statusCode = 422;
         message = "Validation failed";
-        errors = Object.values(err.errors || {}).map((e) => e.message);    }
+        errors = {};
+
+        for (const [field, errorObj] of Object.entries(err.errors || {})) {
+            errors[field] = errorObj.message.replace(/\"/g, '');
+        }
+    }
 
     else if (err.code === 11000) {
         statusCode = 400;

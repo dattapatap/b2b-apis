@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import MongooseDelete from "mongoose-delete";
 
 const subCategorySchema = new mongoose.Schema(
     {
@@ -31,32 +32,26 @@ const subCategorySchema = new mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: "Groups",
             required: true, 
-        }, 
-        isDeleted: {
-            type: Boolean, default: false,
-        },
+        }
 
     },
     {timestamps: true},
 );
 
-// Pre-save middleware to convert name to lowercase
+
+
+function capitalizeWords(str) {
+    return str.replace(/\b\w/g, char => char.toUpperCase());
+}
+
 subCategorySchema.pre("save", function (next) {
     if (this.name) {
-        this.name = this.name.toLowerCase();
+        this.name = capitalizeWords(this.name);
     }
     next();
 });
 
-// Pre-findOneAndUpdate middleware to convert name to lowercase
-subCategorySchema.pre("findOneAndUpdate", function (next) {
-    const update = this.getUpdate();
-    if (update.name) {
-        update.name = update.name.toLowerCase();
-        this.setUpdate(update);
-    }
-    next();
-});
+
 
 
 subCategorySchema.virtual("collections", {
@@ -65,8 +60,16 @@ subCategorySchema.virtual("collections", {
     foreignField: "subcategory", 
     justOne: false, 
 });
-subCategorySchema.set("toObject", { virtuals: true });
-subCategorySchema.set("toJSON", { virtuals: true });
+
+subCategorySchema.plugin(MongooseDelete, { deleted: true, overrideMethods: 'all' });
+subCategorySchema.set("toJSON", {
+    transform: function (doc, ret) {
+        delete ret.__v;
+        ret.id = ret._id;
+        delete ret._id;
+        return ret;
+    },
+});
 
 
 

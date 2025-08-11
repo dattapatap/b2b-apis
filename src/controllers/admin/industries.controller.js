@@ -23,7 +23,7 @@ export const createIndustry = asyncHandler(async (req, res) => {
 
         slug = convertSlug(slug);
         
-        const lastIndustry = await Industries.findOne({ isDeleted: false }, { sr_no: 1 }).sort({ sr_no: -1 }).lean();
+        const lastIndustry = await Industries.findOne({ deleted: { $ne : true} } , { sr_no: 1 }).sort({ sr_no: -1 }).lean();
         sr_no = lastIndustry?.sr_no ? lastIndustry.sr_no + 1 : 1;
 
         if (!req.file) {
@@ -67,8 +67,8 @@ export const getAllIndustry = asyncHandler(async (req, res) => {
     const limit = parseInt(req.query.limit) || 20; 
     const skip = (page - 1) * limit;
 
-    const industry = await Industries.find({ isDeleted: false }).skip(skip).limit(limit).select("-isDeleted -createdAt -updatedAt");
-    const totalIndustry = await Industries.find({ isDeleted: false }).countDocuments();
+    const industry = await Industries.find({ deleted: { $ne : true} }).skip(skip).limit(limit).select("-isDeleted -createdAt -updatedAt");
+    const totalIndustry = await Industries.find({ deleted: { $ne : true} }).countDocuments();
     const totalPages = Math.ceil(totalIndustry / limit);
 
     return res.status(200).json(
@@ -163,7 +163,7 @@ export const updateIndustry = asyncHandler(async (req, res) => {
 export const deleteIndustry = asyncHandler(async (req, res) => {
     const {id} = req.params;
     try {
-        const industry = await Industries.findOne({ _id: id, isDeleted: false });
+        const industry = await Industries.findOne({ _id: id, deleted: { $ne : true} } );
         if (!industry) {
             return res.status(404).json(new ApiResponse(404, null, "Industry not found or already deleted"));
         }

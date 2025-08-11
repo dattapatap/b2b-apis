@@ -26,15 +26,16 @@ app.use(cookieParser())
 
 // Mobile App Routes
 import  applicationRouter from './routes/app/app.router.js'
-app.use("/api/app/v1", requestLogger('app'), applicationRouter);
+// app.use("/api/app/v1", requestLogger('app'), applicationRouter);
+app.use("/api/app/v1", applicationRouter);
 
 // // Web routes
 import  webRouter from './routes/web/web.routes.js'
-app.use("/api/web/v1", requestLogger('web'), webRouter);
+app.use("/api/web/v1",  webRouter);
 
 // Routes for admin
 import  adminRouter from './routes/admin.routes.js'
-app.use("/api/admin/v1", requestLogger('admin'), adminRouter);
+app.use("/api/admin/v1", adminRouter);
 
 
 

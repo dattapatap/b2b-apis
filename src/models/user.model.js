@@ -19,7 +19,7 @@ const userSchema = new Schema(
         gender : { type: String, required : false},
         date_of_birth : { type: Date, required : false},
 
-        seller_type : { type : String, required : false},  // Free listing/Paid/..
+        seller_type : { type : String, required : false},
         isVerified: {type: Boolean, default: false},
         
         profile: {type: String, required: false},

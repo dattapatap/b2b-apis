@@ -7,6 +7,7 @@ const BusinessDetailsSchema = new Schema(
 
         contact_name: { type: String, required: false},
         contact_no: { type: String, required: false},
+        location : { type: Schema.Types.ObjectId, ref: 'Cities'},
 
         company_type: {
             type: String,

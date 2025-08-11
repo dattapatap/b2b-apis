@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import MongooseDelete from "mongoose-delete";
 
 const categorySchema = new mongoose.Schema(
     {
@@ -27,28 +28,17 @@ const categorySchema = new mongoose.Schema(
             ref: "Industries",
             required: true, 
         }, 
-        isDeleted: {
-            type: Boolean, default: false,
-        },
-
     },
     {timestamps: true},
 );
 
+function capitalizeWords(str) {
+    return str.replace(/\b\w/g, char => char.toUpperCase());
+}
 // Pre-save middleware to convert name to lowercase
 categorySchema.pre("save", function (next) {
     if (this.name) {
-        this.name = this.name.toLowerCase();
-    }
-    next();
-});
-
-// Pre-findOneAndUpdate middleware to convert name to lowercase
-categorySchema.pre("findOneAndUpdate", function (next) {
-    const update = this.getUpdate();
-    if (update.name) {
-        update.name = update.name.toLowerCase();
-        this.setUpdate(update);
+        this.name = capitalizeWords(this.name);
     }
     next();
 });
@@ -61,9 +51,16 @@ categorySchema.virtual("subcategories", {
     foreignField: "category", 
     justOne: false, 
 });
-categorySchema.set("toObject", { virtuals: true });
-categorySchema.set("toJSON", { virtuals: true });
 
+categorySchema.plugin(MongooseDelete, { deleted: true, overrideMethods: 'all' });
+categorySchema.set("toJSON", {
+    transform: function (doc, ret) {
+        delete ret.__v;
+        ret.id = ret._id;
+        delete ret._id;
+        return ret;
+    },
+});
 
 
 

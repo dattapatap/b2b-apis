@@ -19,8 +19,10 @@ import * as brandsController from "../../controllers/app/brands.controller.js";
 
 import * as productController from "../../controllers/app/seller/product.controller.js";
 import * as productTypeController from "../../controllers/app/seller/productType.controller.js";
-import * as sucategoriesController from "../../controllers/app/seller/subcategories.controller.js";
 import * as productSpecificationController from "../../controllers/app/seller/productSpecification.controller.js";
+import * as industriesSellerController from "../../controllers/app/seller/industries.controller.js";
+import * as categoriesSellerController from "../../controllers/app/seller/categories.controller.js";
+import * as sucategoriesController from "../../controllers/app/seller/subcategories.controller.js";
 
 
 const router = Router();
@@ -60,32 +62,41 @@ router.route("/user").get( userController.getCurrentUser);
 router.post("/assign-seller", userController.assignSellerRole);
 router.route("/logout").post( userController.logoutUser);
 
-const seller = [verifyJWT, requireRole(["seller"])];
+// Seller-only routes - Create a sub-router for seller routes
+const sellerRouter = Router();
+sellerRouter.use(requireRole(["seller"]));
 
-//New Seller Sign Up Stages 
-router.post("/seller/profile/company-info" , seller, profileController.updateCompanyInfo);
-
+sellerRouter.post("/profile/company-info", profileController.updateCompanyInfo);
 
 // Product APIs
-router.get("/seller/products/active" , seller, productController.getActiveProducts);
-router.get("/seller/products/deactive" , seller, productController.getInactiveProducts);
+sellerRouter.get("/products/active", productController.getActiveProducts);
+sellerRouter.get("/products/deactive", productController.getInactiveProducts);
+sellerRouter.get("/products/:id", productController.getProductDetail);
 
-router.get("/seller/products/:id" , seller, productController.getProductDetail);
-router.post("/seller/products" , seller, productController.createProduct);
+sellerRouter.post("/products", upload.array('images', 10), productController.createProduct);
+// Product management routes
+sellerRouter.post("/product/add-categories", productController.addSubCategoriesToProduct);
 
-router.post("/seller/product/add-categories", seller,  productController.addCategoriesToProduct);
-router.post("/seller/product/add-descriptions", seller, productController.addProductDescription);
-router.post("/seller/product/add-product-catlog", seller, upload.single("product_catlog"),  productController.addProductCatlog);
-router.post("/seller/product/add-product-media", seller, upload.single("product_media"),  productController.addMedia);
-router.post("/seller/product/add-video", seller, productController.addVideoUrl);
-router.post("/seller/product/deactivate-product", seller, productController.changeProductStatus);
+sellerRouter.post("/product/add-descriptions", productController.addProductDescription);
+sellerRouter.post("/product/add-product-catlog", upload.single("product_catlog"), productController.addProductCatlog);
+sellerRouter.post("/product/add-product-media", upload.single("product_media"), productController.addMedia);
+sellerRouter.post("/product/add-video", productController.addVideoUrl);
+sellerRouter.post("/product/deactivate-product", productController.changeProductStatus);
 
+// Product creation related APIs
+sellerRouter.get("/product-types", productTypeController.getAllProductTypes);
+sellerRouter.get("/product-industries", industriesSellerController.getAllIndustry);
+sellerRouter.get("/product-categories/:industry", categoriesSellerController.getCategoryByIndustryId);
+sellerRouter.get("/product-sub-categories/:category", sucategoriesController.getAllSubsByCategoryId);
+sellerRouter.get("/product-specifications", productSpecificationController.getProductSpecifications);
+sellerRouter.get("/product-additional-details", productSpecificationController.getProductAdditionalDetails);
 
-// Product Creation Releted Apis
-router.post("/seller/product-types", seller, productTypeController.getAllProductTypes);
-router.post("/seller/sub-categories", seller, sucategoriesController.getAllSubCategory);
-router.post("/seller/product-specifications", seller, productSpecificationController.getProductSpecifications);
-router.get("/seller/product-additional-details", seller, productSpecificationController.getProductAdditionalDetails);
+// New helper APIs for better product creation flow
+
+sellerRouter.post("/product/suggest-subcategories", productController.getSuggestedSubcategories);
+
+// Mount seller routes under /seller prefix
+router.use("/seller", sellerRouter);
 
 
 export default router;
