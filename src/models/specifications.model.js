@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import MongooseDelete from "mongoose-delete";
 
 const specificationSchema = new mongoose.Schema(
     { 
@@ -33,7 +34,6 @@ const specificationSchema = new mongoose.Schema(
             }
         },
         displayOrder: { type: Number, default: 0 },
-        isDeleted: { type: Boolean, default: false }
     },
     { timestamps: true }
 );
@@ -52,6 +52,16 @@ specificationSchema.pre("findOneAndUpdate", function (next) {
         this.setUpdate(update);
     }
     next();
+});
+
+specificationSchema.plugin(MongooseDelete, { deleted: true, overrideMethods: 'all' });
+specificationSchema.set("toJSON", {
+    transform: function (doc, ret) {
+        delete ret.__v;
+        ret.id = ret._id;
+        delete ret._id;
+        return ret;
+    },
 });
 
 export const Specifications = mongoose.model("Specifications", specificationSchema);

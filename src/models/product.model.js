@@ -40,7 +40,7 @@ const productSchema = new mongoose.Schema(
                 spec_id: {
                     type: mongoose.Schema.Types.ObjectId,
                     ref: "Specifications",
-                    required: true,
+                    required: false,
                 },
                 value: {type: mongoose.Schema.Types.Mixed, required: true},
             },
@@ -50,8 +50,9 @@ const productSchema = new mongoose.Schema(
                 additional_id: {
                     type: mongoose.Schema.Types.ObjectId,
                     ref: "ProductAdditionals",
-                    required: true,
+                    required: false,
                 },
+                name : { type: String },
                 value: {type: mongoose.Schema.Types.Mixed, required: true},
             },
         ],
@@ -61,8 +62,9 @@ const productSchema = new mongoose.Schema(
         is_banned: {  type: String, default: "false", },
         stages: {
             basic_info: { type: Boolean, default: false },
+            descriptions: { type: Boolean, default: false },
+            categories: { type: Boolean, default: false },
             media: { type: Boolean, default: false },
-            category: { type: Boolean, default: false },
             specifications: { type: Boolean, default: false },
             additional_details: { type: Boolean, default: false },
             review: { type: Boolean, default: false }

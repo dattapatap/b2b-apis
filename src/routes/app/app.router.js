@@ -73,15 +73,19 @@ sellerRouter.get("/products/active", productController.getActiveProducts);
 sellerRouter.get("/products/deactive", productController.getInactiveProducts);
 sellerRouter.get("/products/:id", productController.getProductDetail);
 
-sellerRouter.post("/products", upload.array('images', 10), productController.createProduct);
+sellerRouter.post("/products", upload.array('images', 5), productController.createProduct);
+sellerRouter.put("/products", productController.updateProduct);
 // Product management routes
 sellerRouter.post("/product/add-categories", productController.addSubCategoriesToProduct);
-
 sellerRouter.post("/product/add-descriptions", productController.addProductDescription);
 sellerRouter.post("/product/add-product-catlog", upload.single("product_catlog"), productController.addProductCatlog);
-sellerRouter.post("/product/add-product-media", upload.single("product_media"), productController.addMedia);
+sellerRouter.post("/product/add-product-media", upload.array("medias", 5 ), productController.addMedia);
 sellerRouter.post("/product/add-video", productController.addVideoUrl);
-sellerRouter.post("/product/deactivate-product", productController.changeProductStatus);
+sellerRouter.post("/product/product-status", productController.changeProductStatus);
+sellerRouter.post("/product/add-product-specifications", productController.addProductSpecifications);
+sellerRouter.post("/product/add-product-additional-details", productController.addProductAdditionalDetails);
+
+
 
 // Product creation related APIs
 sellerRouter.get("/product-types", productTypeController.getAllProductTypes);
@@ -90,10 +94,6 @@ sellerRouter.get("/product-categories/:industry", categoriesSellerController.get
 sellerRouter.get("/product-sub-categories/:category", sucategoriesController.getAllSubsByCategoryId);
 sellerRouter.get("/product-specifications", productSpecificationController.getProductSpecifications);
 sellerRouter.get("/product-additional-details", productSpecificationController.getProductAdditionalDetails);
-
-// New helper APIs for better product creation flow
-
-sellerRouter.post("/product/suggest-subcategories", productController.getSuggestedSubcategories);
 
 // Mount seller routes under /seller prefix
 router.use("/seller", sellerRouter);

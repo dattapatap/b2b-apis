@@ -25,6 +25,7 @@ const industrySchema = new Schema(
         },
     },
     {  timestamps: true }  
+
 );
 
 // Capitalize the first letter of each word

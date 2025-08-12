@@ -35,6 +35,7 @@ const categorySchema = new mongoose.Schema(
 function capitalizeWords(str) {
     return str.replace(/\b\w/g, char => char.toUpperCase());
 }
+
 // Pre-save middleware to convert name to lowercase
 categorySchema.pre("save", function (next) {
     if (this.name) {

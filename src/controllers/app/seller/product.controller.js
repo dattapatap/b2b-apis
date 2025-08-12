@@ -150,28 +150,28 @@ export const getInactiveProducts = asyncHandler(async (req, res) => {
 
 
 export const getProductDetail = asyncHandler(async (req, res) => {
-    const product_id = req.params.id;
+    const productId = req.params.id;
     const loggedInUser = req.user;
 
-    const product = await Product.findById(product_id)
-                                .populate("media", "images type _id")
-                                .populate("product_unit", "_id name description")
-                                .populate("subcategories", "name slug heading image");
+    const product = await Product.findById(productId)
+                                .populate("media", "images type _id").populate("category", "name slug heading _id")
+                                .populate("industry", "name slug heading id").populate("product_unit", "_id name description")
+                                .populate("subcategories", "name slug heading image")
+                                .populate("specifications.spec_id", "spec_id inputType options")
+                                .populate("additional_details.additional_id", "name inputType options");
 
     if (!product) throw new ApiError(404, "Product not found.");
+
     if (product.seller_id.toString() !== loggedInUser._id.toString()) {
         throw new ApiError(403, "Unauthorized action.");
     }
+
     return res.status(200).json(new ApiResponse(200, product, "Product fetched successfully."));
 
 });
 
-
-
-
-
 export const createProduct = asyncHandler(async (req, res) => {
-    const { name, price, product_unit } = req.body;
+    const { name, price } = req.body;
     const productImages = req.files;
     const loggedInUser = req.user;
 
@@ -188,8 +188,7 @@ export const createProduct = asyncHandler(async (req, res) => {
             "number.base": "Price must be a number.",
             "number.empty": "Price cannot be empty.",
             "any.required": "Price is a required field."
-        }),
-        product_unit: Joi.string().required()
+        })
     });
 
     const imageSchema = Joi.array().items(
@@ -214,7 +213,7 @@ export const createProduct = asyncHandler(async (req, res) => {
     });
 
     // Validate basic fields
-    await schema.validateAsync({ name, price, product_unit }, { abortEarly: false });
+    await schema.validateAsync({ name, price }, { abortEarly: false });
     
     // Validate images if provided
     if (productImages && productImages.length > 0) {
@@ -229,7 +228,6 @@ export const createProduct = asyncHandler(async (req, res) => {
         seller_id: loggedInUser._id,  
         slug: slug, 
         price: price,
-        product_unit: product_unit,
         stages: {
             basic_info: true,
             media: true,
@@ -285,12 +283,70 @@ export const createProduct = asyncHandler(async (req, res) => {
 
     // Fetch the complete product with populated fields
     const populatedProduct = await Product.findById(newProduct._id)
-        .populate("media", "images type _id")
-        .populate("product_unit", "_id name description")
-        .populate("subcategories", "name slug heading image");
+                                .populate("media", "images type _id").populate("category", "name slug heading _id")
+                                .populate("industry", "name slug heading id").populate("product_unit", "_id name description")
+                                .populate("subcategories", "name slug heading image")
+                                .populate("specifications.spec_id", "spec_id inputType options")
+                                .populate("additional_details.additional_id", "name inputType options");
 
     return res.status(201).json(new ApiResponse(201, populatedProduct, "Product with images added successfully"));
+
 });
+
+
+export const updateProduct = asyncHandler(async (req, res) => {
+    const { productId, name, price } = req.body;
+    const loggedInUser = req.user;
+    // Joi Schema for validation
+    const schema = Joi.object({
+        productId: Joi.string().required().messages({
+            "any.required": "Product ID is required."
+        }),
+        name: Joi.string().min(5).max(100).optional().messages({
+            "string.base": "Product name must be a string.",
+            "string.min": "Product name should have at least 5 characters.",
+            "string.max": "Product name should not exceed 100 characters."
+        }),
+        price: Joi.number().optional().messages({
+            "number.base": "Price must be a number."
+        })
+    });
+
+    // Validate fields
+    await schema.validateAsync({ productId, name, price }, { abortEarly: false });
+
+   // Find product
+    const product = await Product.findById(productId);
+    if (!product) throw new ApiError(404, "Product not found.");
+
+    // Check ownership
+    if (product.seller_id.toString() !== loggedInUser._id.toString()) {
+        throw new ApiError(403, "Unauthorized action. This product does not belong to you.");
+    }
+
+    // Update fields if provided
+    if (name) {
+        product.name = name;
+        product.slug = slugify(name, { lower: true }) + "-" + Date.now();
+    }
+    if (price !== undefined) {
+        product.price = price;
+    }
+
+    await product.save();
+
+    // Fetch updated product
+    const populatedProduct = await Product.findById(product._id)
+                    .populate("media", "images type _id").populate("category", "name slug heading _id")
+                    .populate("industry", "name slug heading id").populate("product_unit", "_id name description")
+                    .populate("subcategories", "name slug heading image")
+                    .populate("specifications.spec_id", "spec_id inputType options")
+                    .populate("additional_details.additional_id", "name inputType options");
+
+    return res.status(200).json(new ApiResponse(200, populatedProduct, "Product updated successfully"));
+});
+
+
 
 export const addSubCategoriesToProduct = asyncHandler(async (req, res) => {
     const { productId,  industry, category, subcategory_ids } = req.body;
@@ -348,27 +404,25 @@ export const addSubCategoriesToProduct = asyncHandler(async (req, res) => {
     // Update industry, category, and subcategories
     product.industry = industry;
     product.category = category;
-    product.subcategories = finalSubcategories.map(sub => sub._id);
+
+    product.subcategories = subcategory_ids;
 
     // Update stage
     if (product.stages) {
-        product.stages.category = true;
+        product.stages.categories = true;
     }
     await product.save();
 
     const populatedProduct = await Product.findById(product._id)
-                .populate("media", "images type _id")
-                .populate("product_unit", "_id name description")
-                .populate("subcategories", "name slug heading image");
+                        .populate("media", "images type _id").populate("category", "name slug heading _id")
+                        .populate("industry", "name slug heading id").populate("product_unit", "_id name description")
+                        .populate("subcategories", "name slug heading image")
+                        .populate("specifications.spec_id", "spec_id inputType options")
+                        .populate("additional_details.additional_id", "name inputType options");
 
                     
     return res.status(200).json(new ApiResponse(200, populatedProduct, "Subcategories added successfully."));
 });
-
-
-
-
-
 
 export const addProductDescription = asyncHandler( async( req, res) => {
     const product_id = req.body.productId;
@@ -383,88 +437,125 @@ export const addProductDescription = asyncHandler( async( req, res) => {
     });
     await schema.validateAsync({ product_type, product_description }, { abortEarly: false });
 
-    const product = await Product.findById(product_id).populate('product_unit')
+    const product = await Product.findById(product_id);
 
     if (!product) throw new ApiError(404, "Product not found.");
     if (product.seller_id.toString() !== loggedInUser._id.toString()) {
-        throw new ApiError(403, "Unauthorized action.");
+        throw new ApiError(400, "Unauthorized action. This product is not belongs to you!");
     }
 
     product.product_type = product_type;
     product.description = product_description;
+
+    if (product.stages) {
+        product.stages.descriptions = true;
+    }
+
     await product.save();
 
-    const populatedProduct = await Product.findById(product._id).populate("media", "url type metadata")
-    .populate("subcategories", "name slug heading image ")
-    .populate("");
+    const populatedProduct = await Product.findById(product._id)
+                        .populate("media", "images type _id").populate("category", "name slug heading _id")
+                        .populate("industry", "name slug heading id").populate("product_unit", "_id name description")
+                        .populate("subcategories", "name slug heading image")
+                        .populate("specifications.spec_id", "spec_id inputType options")
+                        .populate("additional_details.additional_id", "name inputType options");
 
     return res.status(200).json(new ApiResponse(200, populatedProduct, "Product description added successfully."));
 
 });
 
-
 export const addMedia = asyncHandler(async (req, res) => {
     const { productId } = req.body;
-    const productFile = req.file;
+    const productFiles = req.files;
     const loggedInUser = req.user;
 
     // Validation Schema
     const schema = Joi.object({
         productId: Joi.string().required(),
-        file: Joi.object({
-            originalname: Joi.string().regex(/\.(jpg|jpeg|png|webp)$/i).required().messages({
-                "string.pattern.base": "Only image files are allowed.",
-                "any.required": "File name is required."
-            }),
-            size: Joi.number().max(2 * 1024 * 1024).messages({
-                "number.max": "File size should not exceed 2MB."
-            })
-        }).required().unknown(true)
+        medias: Joi.array().items(
+            Joi.object({
+                originalname: Joi.string().regex(/\.(jpg|jpeg|png|webp)$/i).required().messages({
+                    "string.pattern.base": "Only image files (jpg, jpeg, png, webp) are allowed.",
+                    "any.required": "File name is required."
+                }),
+                size: Joi.number().max(2 * 1024 * 1024).required().messages({
+                    "number.max": "Each file size should not exceed 2MB.",
+                    "any.required": "File size is required."
+                }),
+                mimetype: Joi.string().valid('image/jpeg', 'image/jpg', 'image/png', 'image/webp').required().messages({
+                    "any.only": "Invalid image type. Only JPEG, JPG, PNG, and WebP are allowed.",
+                    "any.required": "File MIME type is required."
+                })
+            }).unknown(true)
+        ).min(1).max(5).required().messages({
+            "array.min": "At least 1 image is required.",
+            "array.max": "Maximum 10 images are allowed.",
+            "any.required": "Product images are required."
+        })
     });
-    await schema.validateAsync({ productId, file: productFile }, { abortEarly: false });
+
+    await schema.validateAsync({ productId, medias: productFiles }, { abortEarly: false });
 
     const product = await Product.findById(productId).populate("media");
     if (!product) throw new ApiError(404, "Product not found.");
     if (product.seller_id.toString() !== loggedInUser._id.toString()) {
-        throw new ApiError(403, "Unauthorized action.");
+        throw new ApiError(404, "Unauthorized action. This product not belongs to you!");
     }
 
+
+    const uploadedMediaIds = [];
     // Upload file to Cloudinary
-    const uploadedUrl = await uploadOnCloudinary(productFile.path, "product-gallery");
+    for (const file of productFiles) {
+        try {
+            const uploadedUrl = await uploadOnCloudinary(file.path, "product-gallery");
 
-    let mediaData;
-    const transformations = {
-        "100x100": uploadedUrl.replace("/upload/", "/upload/w_100,h_100,c_fill/"),
-        "250x250": uploadedUrl.replace("/upload/", "/upload/w_250,h_250,c_fill/"),
-        "500x500": uploadedUrl.replace("/upload/", "/upload/w_500,h_500,c_fill/"),
-        "1000x1000": uploadedUrl.replace("/upload/", "/upload/w_1000,h_1000,c_fill/")
-    };
+            const transformations = {
+                "100x100": uploadedUrl.replace("/upload/", "/upload/w_100,h_100,c_fill/"),
+                "250x250": uploadedUrl.replace("/upload/", "/upload/w_250,h_250,c_fill/"),
+                "500x500": uploadedUrl.replace("/upload/", "/upload/w_500,h_500,c_fill/"),
+                "1000x1000": uploadedUrl.replace("/upload/", "/upload/w_1000,h_1000,c_fill/")
+            };
 
-    mediaData = new ProductMedia({
-        product_id: product._id,
-        type: "image",
-        images: {
-            original: uploadedUrl,
-            sizes: transformations
-        },
-        metadata: {
-            size_in_kb: productFile.size / 1024,
-            format: productFile.mimetype
+            // Create media record
+            const mediaData = new ProductMedia({
+                product_id: product._id,
+                type: "image",
+                images: {
+                    original: uploadedUrl,
+                    sizes: transformations
+                },
+                metadata: {
+                    size_in_kb: file.size / 1024,
+                    format: file.mimetype
+                }
+            });
+
+            await mediaData.save();
+            uploadedMediaIds.push(mediaData._id);
+
+        } catch (err) {
+            console.error(`Error uploading ${file.originalname}:`, err);
         }
-    });
+    }
 
-    await mediaData.save();
-    product.media.push(mediaData._id);
-    await product.save();
+    if (uploadedMediaIds.length > 0) {
+        product.media.push(...uploadedMediaIds);
+        if (product.stages) {
+            product.stages.media = true;
+        }
+        await product.save();
+    }
 
     const populatedProduct = await Product.findById(product._id)
-                                    .populate("media", "images url type metadata")
-                                    .populate("subcategories", "name slug heading image");
+                    .populate("media", "images type _id").populate("category", "name slug heading _id")
+                    .populate("industry", "name slug heading id").populate("product_unit", "_id name description")
+                    .populate("subcategories", "name slug heading image")
+                    .populate("specifications.spec_id", "spec_id inputType options")
+                    .populate("additional_details.additional_id", "name inputType options");
 
     return res.status(200).json(new ApiResponse(200, populatedProduct, "Product media added successfully."));
     
 });
-
 
 export const addVideoUrl = asyncHandler(async (req, res) => {
     const { productId, videoUrl } = req.body;
@@ -485,7 +576,7 @@ export const addVideoUrl = asyncHandler(async (req, res) => {
     const product = await Product.findById(productId).populate("media");
     if (!product) throw new ApiError(404, "Product not found.");
     if (product.seller_id.toString() !== loggedInUser._id.toString()) {
-        throw new ApiError(403, "Unauthorized action.");
+        throw new ApiError(400, "Unauthorized action. This product not belongs to you!");
     }
 
     // Check for existing video
@@ -507,8 +598,12 @@ export const addVideoUrl = asyncHandler(async (req, res) => {
     }
 
     const populatedProduct = await Product.findById(product._id)
-                        .populate("media", "images url type metadata")
-                        .populate("subcategories", "name slug heading image");
+                .populate("media", "images type _id").populate("category", "name slug heading _id")
+                .populate("industry", "name slug heading id").populate("product_unit", "_id name description")
+                .populate("subcategories", "name slug heading image")
+                .populate("specifications.spec_id", "spec_id inputType options")
+                .populate("additional_details.additional_id", "name inputType options");
+
 
     return res.status(200).json(new ApiResponse(200, populatedProduct, "YouTube video added successfully."));
 });
@@ -566,12 +661,20 @@ export const addProductCatlog = asyncHandler(async (req, res) => {
     });
 
     await media.save();
-
     product.media.push(media._id);
+
+    if (product.stages) {
+        product.stages.media = true;
+    }
     await product.save();
 
-    const populatedProduct = await Product.findById(product._id).populate("media", "url type metadata")
-                                                .populate("subcategories", "name slug heading image ");
+    const populatedProduct = await Product.findById(product._id)
+                .populate("media", "images type _id").populate("category", "name slug heading _id")
+                .populate("industry", "name slug heading id").populate("product_unit", "_id name description")
+                .populate("subcategories", "name slug heading image")
+                .populate("specifications.spec_id", "spec_id inputType options")
+                .populate("additional_details.additional_id", "name inputType options");
+                                    
 
     return res.status(200).json(new ApiResponse(200, populatedProduct, "Product catalog added successfully."));
 })
@@ -588,56 +691,173 @@ export const changeProductStatus = asyncHandler(async (req, res) =>{
         throw new ApiError(403, "You are not authorized to perform this action");
     }
 
-
     product.status = (product.status == 'active')?'inactive':'active';
     await product.save();
 
-    const populatedProduct = await Product.findById(product._id).populate("media", "url type metadata")
-                                                .populate("subcategories", "name slug heading image ");
+    const populatedProduct = await Product.findById(product._id)
+                            .populate("media", "images type _id").populate("category", "name slug heading _id")
+                            .populate("industry", "name slug heading id").populate("product_unit", "_id name description")
+                            .populate("subcategories", "name slug heading image")
+                            .populate("specifications.spec_id", "spec_id inputType options")
+                            .populate("additional_details.additional_id", "name inputType options");
+
 
     return res.status(200).json(new ApiResponse(200, populatedProduct, "Product status changed."));
 
 });
 
-// Get suggested subcategories for a product name
-export const getSuggestedSubcategories = asyncHandler(async (req, res) => {
-    const { product_name } = req.body;
-    
-    if (!product_name || product_name.trim().length < 3) {
-        throw new ApiError(400, "Product name must be at least 3 characters long.");
+
+export const addProductSpecifications = asyncHandler ( async(req, resp) =>{
+
+    const product_id = req.body.productId;
+    const specifications = req.body.specifications;
+    const loggedInUser = req.user;
+
+    const schema = Joi.object({
+        productId: Joi.string().required(),
+        specifications: Joi.array().items(
+            Joi.object({
+                spec_id: Joi.string().required(),
+                value: Joi.alternatives().try(
+                    Joi.string(),
+                    Joi.array().items(Joi.string())
+                ).required()
+            })
+        ).required()
+    });
+
+    await schema.validateAsync({ productId: product_id, specifications }, { abortEarly: false });
+
+    const product = await Product.findById(product_id);
+    if (!product) throw new ApiError(404, "Product not found.");
+
+    if (product.seller_id.toString() !== loggedInUser._id.toString()) {
+        throw new ApiError(400, "Unauthorized action. This product does not belong to you!");
     }
-    
-    const suggestions = await findSubcategories(product_name);
-    
-    return res.status(200).json(new ApiResponse(200, {
-        suggestions,
-        count: suggestions.length,
-        product_name
-    }, "Subcategory suggestions fetched successfully."));
-});
 
-// Get categories by industry
-export const getCategoriesByIndustry = asyncHandler(async (req, res) => {
-    const { industry_id } = req.params;
-    
-    const Categories = (await import("../../../models/categories.model.js")).Categories;
-    
-    const categories = await Categories.find({ 
-        industry: industry_id, 
-        isDeleted: false 
-    }).select("name _id slug image");
-    
-    return res.status(200).json(new ApiResponse(200, categories, "Categories fetched successfully."));
-});
+    const incomingSpecIds = specifications.filter(s => s.spec_id).map(s => s.spec_id.toString());
+    product.specifications = product.specifications.filter(existing => {
+            return incomingSpecIds.includes(existing.spec_id.toString());      
+    });
 
-// Get subcategories by category
-export const getSubcategoriesByCategory = asyncHandler(async (req, res) => {
-    const { category_id } = req.params;    
-    const subcategories = await SubCategories.find({ 
-        category: category_id, 
-        isDeleted: false 
-    }).select("name _id slug heading image");
-    
-    return res.status(200).json(new ApiResponse(200, subcategories, "Subcategories fetched successfully."));
-});
 
+    specifications.forEach(spec => {
+        const existingIndex = product.specifications.findIndex(
+            s => s.spec_id?.toString() === spec.spec_id
+        );
+        if (existingIndex > -1) {
+            product.specifications[existingIndex].value = spec.value;
+        } else {
+            product.specifications.push({ spec_id: spec.spec_id, value: spec.value });
+        }
+    });
+
+
+    if (product.stages) {
+        product.stages.specifications = true;
+    }
+
+    await product.save();
+    const populatedProduct = await Product.findById(product._id)
+                    .populate("media", "images type _id")
+                    .populate("category", "name slug heading _id")
+                    .populate("industry", "name slug heading id")
+                    .populate("product_unit", "_id name description")
+                    .populate("subcategories", "name slug heading image")
+                    .populate("specifications.spec_id", "spec_id inputType options")
+                    .populate("additional_details.additional_id", "name inputType options");
+
+
+    return resp.status(200).json( new ApiResponse(200, populatedProduct, "Product specifications added successfully.") );
+
+} )
+
+
+export const addProductAdditionalDetails = asyncHandler ( async(req, resp) =>{
+    
+    const { productId, additional_details } = req.body;
+    const loggedInUser = req.user;
+
+    const schema = Joi.object({
+        productId: Joi.string().required(),
+        additional_details: Joi.array().items(
+            Joi.object({
+                additional_id: Joi.string(),
+                name: Joi.string().when("additional_id", {
+                    is: Joi.string().required(),
+                    then: Joi.forbidden(),
+                    otherwise: Joi.required()
+                }),
+                value: Joi.alternatives().try(
+                    Joi.string(),
+                    Joi.array().items(Joi.string())
+                ).required()
+            })
+        ).required()
+    });
+
+    await schema.validateAsync({ productId: productId, additional_details }, { abortEarly: false });
+
+    const product = await Product.findById(productId);
+    if (!product) throw new ApiError(404, "Product not found.");
+
+    if (product.seller_id.toString() !== loggedInUser._id.toString()) {
+        throw new ApiError(400, "Unauthorized action. This product does not belong to you!");
+    }
+
+    const incomingAddiIds = additional_details.filter(d => d.additional_id).map(d => d.additional_id.toString());
+    const incomingCustomNames = additional_details.filter(d => !d.additional_id).map(d => d.name.trim().toLowerCase());
+
+    product.additional_details = product.additional_details.filter(existing => {
+        if (existing.additional_id) {
+            return incomingAddiIds.includes(existing.additional_id.toString());
+        } else {
+            return incomingCustomNames.includes(existing.name.trim().toLowerCase());
+        }
+    });
+
+
+    // 5. Add or update
+    additional_details.forEach(detail => {
+        if (detail.additional_id) {
+            const existingIndex = product.additional_details.findIndex(
+                d => d.additional_id?.toString() === detail.additional_id
+            );
+            if (existingIndex > -1) {
+                product.additional_details[existingIndex].value = detail.value;
+            } else {
+                product.additional_details.push({ additional_id: detail.additional_id, value: detail.value });
+            }
+        } else {
+            // custom field
+            const existingIndex = product.additional_details.findIndex(
+                d => !d.additional_id && d.name.trim().toLowerCase() === detail.name.trim().toLowerCase()
+            );
+            if (existingIndex > -1) {
+                product.additional_details[existingIndex].value = detail.value;
+            } else {
+                product.additional_details.push({ name: detail.name.trim(), value: detail.value });
+            }
+        }
+    });
+    
+
+    if (product.stages) {
+        product.stages.additional_details = true;
+    }
+
+
+    await product.save();
+    const populatedProduct = await Product.findById(product._id)
+                .populate("media", "images type _id")
+                .populate("category", "name slug heading _id")
+                .populate("industry", "name slug heading id")
+                .populate("product_unit", "_id name description")
+                .populate("subcategories", "name slug heading image")
+                .populate("specifications.spec_id", "spec_id inputType options")
+                .populate("additional_details.additional_id", "name inputType options");
+
+
+    return resp.status(200).json( new ApiResponse(200, populatedProduct, "Product additional details added successfully.") );
+
+});
