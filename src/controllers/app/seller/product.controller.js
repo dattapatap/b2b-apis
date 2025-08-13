@@ -173,6 +173,10 @@ export const createProduct = asyncHandler(async (req, res) => {
     const productImages = req.files;
     const loggedInUser = req.user;
 
+    if (price !== undefined && price !== null && price !== "") {
+        price = Number(price);
+    }
+
     // Validation Schema
     const schema = Joi.object({
         name: Joi.string().min(5).max(100).required().messages({
@@ -295,6 +299,11 @@ export const createProduct = asyncHandler(async (req, res) => {
 export const updateProduct = asyncHandler(async (req, res) => {
     const { productId, name, price } = req.body;
     const loggedInUser = req.user;
+
+    if (price !== undefined && price !== null && price !== "") {
+        price = Number(price);
+    }
+
     // Joi Schema for validation
     const schema = Joi.object({
         productId: Joi.string().required().messages({
