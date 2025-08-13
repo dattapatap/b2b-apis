@@ -32,9 +32,7 @@ const productSchema = new mongoose.Schema(
         },
 
         price: {required: false, type: Number},
-
         product_unit: { type: mongoose.Schema.Types.ObjectId, ref: "ProductType" },
-
         specifications: [
             {
                 spec_id: {

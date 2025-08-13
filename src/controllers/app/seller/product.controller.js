@@ -81,7 +81,6 @@ export const getActiveProducts = asyncHandler(async (req, res) => {
     }, "Active products fetched successfully."));
 });
 
-
 export const getInactiveProducts = asyncHandler(async (req, res) => {
 
     const loggedInUser = req.user;
@@ -147,7 +146,6 @@ export const getInactiveProducts = asyncHandler(async (req, res) => {
 
 
 });
-
 
 export const getProductDetail = asyncHandler(async (req, res) => {
     const productId = req.params.id;
@@ -345,7 +343,6 @@ export const updateProduct = asyncHandler(async (req, res) => {
 
     return res.status(200).json(new ApiResponse(200, populatedProduct, "Product updated successfully"));
 });
-
 
 
 export const addSubCategoriesToProduct = asyncHandler(async (req, res) => {

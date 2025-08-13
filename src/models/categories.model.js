@@ -54,6 +54,7 @@ categorySchema.virtual("subcategories", {
 });
 
 categorySchema.plugin(MongooseDelete, { deleted: true, overrideMethods: 'all' });
+
 categorySchema.set("toJSON", {
     transform: function (doc, ret) {
         delete ret.__v;
