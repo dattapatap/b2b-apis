@@ -169,7 +169,7 @@ export const getProductDetail = asyncHandler(async (req, res) => {
 });
 
 export const createProduct = asyncHandler(async (req, res) => {
-    const { name, price } = req.body;
+    let { name, price } = req.body;
     const productImages = req.files;
     const loggedInUser = req.user;
 
@@ -296,8 +296,34 @@ export const createProduct = asyncHandler(async (req, res) => {
 });
 
 
+export const deleteProduct = asyncHandler( async( req, res) => {
+    const {productId} = req.params; 
+    const loggedInUser = req.user;
+
+    try {
+        const product = await Product.findOne({ _id: productId, deleted: { $ne : true} });
+
+        if (!product) {
+            return res.status(404).json(new ApiResponse(404, null, "Product not found or already deleted"));
+        }
+
+        if (product.seller_id.toString() !== loggedInUser._id.toString()) {
+            throw new ApiError(403, "Unauthorized action. This product does not belong to you.");
+        }
+
+        product.delete();
+
+        return res.status(200).json(new ApiResponse(200, null, "Product deleted successfully"));
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500) .json(new ApiError(500, null, "Internal server error"));
+    }
+})
+
+
 export const updateProduct = asyncHandler(async (req, res) => {
-    const { productId, name, price } = req.body;
+    let { productId, name, price } = req.body;
     const loggedInUser = req.user;
 
     if (price !== undefined && price !== null && price !== "") {
