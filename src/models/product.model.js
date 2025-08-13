@@ -27,7 +27,7 @@ const productSchema = new mongoose.Schema(
         status: {
             required: true,
             type: String,
-            default: "active",
+            default: "inactive",
             index: true,
         },
 
