@@ -230,6 +230,7 @@ export const createProduct = asyncHandler(async (req, res) => {
         seller_id: loggedInUser._id,  
         slug: slug, 
         price: price,
+        status: 'inactive',
         stages: {
             basic_info: true,
             media: true,
