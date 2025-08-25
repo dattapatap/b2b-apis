@@ -1,16 +1,18 @@
+import Joi from "joi";
+import mongoose from "mongoose";
+import slugify from "slugify";
+
+
 import { asyncHandler } from "../../../utils/asyncHandler.js";
 import { ApiError } from "../../../utils/ApiError.js";
 import { ApiResponse } from "../../../utils/ApiResponse.js";
 
 import {User} from "../../../models/user.model.js";
 import { BusinessDetails } from "../../../models/businessDetails.model.js";
-import { findSubcategories } from '../../../utils/helper.js';
 
-import Joi from "joi";
-import mongoose from "mongoose";
 import { Product } from "../../../models/product.model.js";
-import slugify from "slugify";
 import { SubCategories } from "../../../models/subCategories.model.js";
+import { UserContacts } from "../../../models/userContacts.model.js";
 
 
 export const updateCompanyInfo = asyncHandler ( async( req, resp) => {
@@ -72,24 +74,14 @@ export const updateCompanyInfo = asyncHandler ( async( req, resp) => {
             await user.save({ session });
         }
         
-        const matchedSubcategories = await findSubcategories(product_name);
-
         const slug = slugify(product_name, { lower: true }) + "-" + Date.now();
+
         const productData = {
             name: product_name,
             seller_id : loggedUser,
             slug : slug,
             price : product_price,
         };
-    
-        // Single Subcategory - Assign to Product
-        if (matchedSubcategories.length > 0) {
-            productData.subcategories = matchedSubcategories.map(sub => sub._id);
-        }else{
-            const uncategory =  await SubCategories.findOne({ _id:"684fa86ae994766e539fcef0", name: "Uncategoriesed" }).select('name _id category');
-            productData.subcategories = uncategory._id;
-        }
-    
         const newProduct = new Product(productData);
         await newProduct.save();
     
@@ -116,7 +108,7 @@ export const updateCompanyInfo = asyncHandler ( async( req, resp) => {
 
 
 export const updateContactPerson = asyncHandler ( async( req, resp)=>{
-        const { company_name, gst_no } = req.body;    
+    const { company_name, gst_no } = req.body;    
     const loggedUser = req.user._id;
 
     
@@ -181,97 +173,157 @@ export const updateContactPerson = asyncHandler ( async( req, resp)=>{
 
 
 
-// export const updateAccountDetails = asyncHandler(async (req, res) => {
-//     const {fullName, email} = req.body;
+// Seller Contacts Apis 
+export const getAllContacts = asyncHandler(async (req, res) => {
+    const loggedUser = req.user._id;
+    const contacts = await UserContacts.find({  user_id : loggedUser }).sort({ sr_no: 1 }); 
+    return res.status(200).json( new ApiResponse( 200, contacts , "Contact fetched successfully") );
+});
 
-//     if (!fullName || !email) {
-//         throw new ApiError(400, "All fields are required");
-//     }
 
-//     const user = await User.findByIdAndUpdate(
-//         req.user?._id,
-//         {
-//             $set: {
-//                 fullName,
-//                 email: email,
-//             },
-//         },
-//         {new: true},
-//     ).select("-password");
+export const getContactById = asyncHandler(async (req, res) => { 
+    const {id} = req.params;
+    const contacts = await UserContacts.findById(id).select("-deleted");
+    if (!contacts) {
+        return res.status(400).json(new ApiError(400, null, "Contact not found"));
+    }
+    return res.status(200).json(new ApiResponse(200, contacts, "Contact fetched successfully"));
+});
 
-//     return res.status(200).json(new ApiResponse(200, user, "Account details updated successfully"));
-// });
 
-// export const updateUserAvatar = asyncHandler(async (req, res) => {
-//     const avatarLocalPath = req.file?.path;
 
-//     if (!avatarLocalPath) {
-//         throw new ApiError(400, "Avatar file is missing");
-//     }
-//     const avatar = await uploadOnCloudinary(avatarLocalPath);
 
-//     if (!avatar.url) {
-//         throw new ApiError(400, "Error while uploading on avatar");
-//     }
+export const createContact = asyncHandler(async (req, res) => {
+    const { division, contact_person, address, mobile_no, landline_no, toll_free_no, email, fax_no } = req.body;
 
-//     const user = await User.findByIdAndUpdate(
-//         req.user?._id,
-//         {
-//             $set: {
-//                 avatar: avatar.url,
-//             },
-//         },
-//         {new: true},
-//     ).select("-password");
+    const loggedUser = req.user._id;
+    
+    const schema = Joi.object({
+      division: Joi.string().min(3).max(100).required().messages({ "string.empty": "Division is required", "string.min": "Division must be at least 3 characters",}),  
+      contact_person: Joi.string().min(3).max(100).required(),  
+      address: Joi.object({
+        address_line: Joi.string().min(5).max(200).required(),
+        landmark: Joi.string().allow(""),
+        city: Joi.string().min(2).max(50).required(),
+        state: Joi.string().min(2).max(50).required(),
+        postal_code: Joi.string().pattern(/^[0-9]{5,10}$/).required(),
+        country: Joi.string().min(2).max(50).required(),
+      }).required(),
+  
+      mobile_no: Joi.string().pattern(/^\+?[0-9]{7,15}$/).required() .messages({"string.pattern.base": "Mobile number must be valid"}),
+      landline_no: Joi.string().allow(""),
+      toll_free_no: Joi.string().allow(""),
+      email: Joi.string().email().required().messages({"string.email": "Invalid email format"}),
+      fax_no: Joi.string().allow(""),
 
-//     return res.status(200).json(new ApiResponse(200, user, "Avatar image updated successfully"));
-// });
+    });
+  
+    await schema.validateAsync(req.body, { abortEarly: false });
+  
+    const session = await mongoose.startSession();
+    session.startTransaction();  
+    try {
+      const lastContact = await UserContacts.findOne({ user_id:loggedUser }).sort({ sr_no: -1 });
+      const sr_no = lastContact ? lastContact.sr_no + 1 : 1;
+  
+      const contact = await UserContacts.create({ user_id:loggedUser,  division, contact_person,  address,  mobile_no,  landline_no, toll_free_no,  email,fax_no, sr_no, });
+  
+      await session.commitTransaction();
+      session.endSession();
+  
+      return res.status(201).json(new ApiResponse(201, contact , "Contact added successfully"));
+    } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(500).json(new ApiResponse(500, "Something went wrong", error.message));
+    }
+    
+  });
 
-// export const updateUserCoverImage = asyncHandler(async (req, res) => {
-//     const coverImageLocalPath = req.file?.path;
 
-//     if (!coverImageLocalPath) {
-//         throw new ApiError(400, "Cover image file is missing");
-//     }
 
-//     //TODO: delete old image - assignment
 
-//     const coverImage = await uploadOnCloudinary(coverImageLocalPath);
+export const updateContact = asyncHandler(async (req, res) => {
+    const { client_name, rating, comment } = req.body;
+    const clientFile = req.file;
+    const { id } = req.params;
 
-//     if (!coverImage.url) {
-//         throw new ApiError(400, "Error while uploading on avatar");
-//     }
+    const schema = Joi.object({
+        client_name: Joi.string().min(3).max(50).required(),
+        rating: Joi.string().min(1).max(5).required(),
+        comment:Joi.string().min(30).max(500).required(),
+        image: Joi.object({
+            originalname: Joi.string().regex(/\.(jpg|jpeg|png|webp)$/i).required().messages({
+                "string.pattern.base": "Only image files are allowed.",
+                "any.required": "File name is required."
+            }),
+            size: Joi.number().max(2 * 1024 * 1024).messages({
+                "number.max": "File size should not exceed 2MB."
+            })
+        }).unknown(true).optional()
+    });
+    await schema.validateAsync(
+        { client_name, rating, comment, ...(clientFile && { image: clientFile })  }, { abortEarly: false }
+    );
 
-//     const user = await User.findByIdAndUpdate(
-//         req.user?._id,
-//         {
-//             $set: {
-//                 coverImage: coverImage.url,
-//             },
-//         },
-//         {new: true},
-//     ).select("-password");
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    try {
+        const testimonials = await Testimonials.findById(id).session(session);
+        if (!testimonials) {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(404).json(new ApiResponse(404, null, "Testimonials not found"));
+        }
 
-//     return res.status(200).json(new ApiResponse(200, user, "Cover image updated successfully"));
-// });
+        // Handle image replacement
+        let imageUrl = testimonials.image;
+        if (clientFile) {
+            await deleteLocalFile(testimonials.image);          
+            imageUrl = await uploadLocally(clientFile.path, "testimonials");
+        }
 
-// export const logoutUser = asyncHandler(async (req, res) => {
-//     const deviceType = "mobile";
+        // Update fields
+        testimonials.client_name = client_name;
+        testimonials.rating      = rating;
+        testimonials.comment     = comment;
+        testimonials.image       = imageUrl;
 
-//     await User.findByIdAndUpdate(
-//         req.user._id,
-//         { $unset: { [`refreshTokens.${deviceType}`]: "" } },
-//         { new: true }
-//     );
+        await testimonials.save({ session });
+        await session.commitTransaction();
+        session.endSession();
 
-//     const options = {
-//         httpOnly: true,
-//         secure: true,
-//     };
+        return res.status(200).json(new ApiResponse(200, testimonials, "Testimonials updated successfully"));
+    } catch (error) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(500).json(new ApiResponse(500, null, "Something went wrong",  error.message));
+    }
 
-//     return res
-//         .status(200)
-//         .clearCookie("accessToken", options)
-//         .clearCookie("refreshToken", options)
-//         .json(new ApiResponse(200, {}, "User logged Out"));
-// });
+});
+
+export const deleteContact = asyncHandler(async (req, res) => {
+    const {id} = req.params;
+    const testimonials = await Testimonials.findOne({ _id: id });
+    if (!testimonials) {
+        return res.status(404).json(new ApiResponse(404, null, "Testimonials not found or already deleted"));
+    }
+    await testimonials.delete();
+    return res.status(200).json(new ApiResponse(200, testimonials, "Testimonials deleted successfully"));
+});
+
+export const reorderContacts = asyncHandler( async ( req, res) =>{
+    const { testimonials }  = req.body
+    if (!Array.isArray(testimonials)) {
+            return res.status(400).json(new ApiResponse(400, null, "Invalid testimonials payload"));
+    }
+    for (const cat of testimonials) {        
+        if (!cat.id || typeof cat.sr_no !== 'number') continue;
+        await Testimonials.findByIdAndUpdate(cat.id, { sr_no: cat.sr_no});
+    }
+
+    const newTestimonials = await Testimonials.find({ deleted: { $ne:true } }).sort({ sr_no: 1 });
+    return res.status(200).json(new ApiResponse(200, newTestimonials, "Sr numbers updated"));
+
+})
+

@@ -1,6 +1,4 @@
 import mongoose, {Schema} from "mongoose";
-import { User } from './user.model.js';
-import { Roles } from './roles.modal.js';
 
 const userRolesSchema = new Schema({
     user_id: {type: Schema.Types.ObjectId, ref: "User"},

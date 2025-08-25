@@ -4,68 +4,24 @@ import bcrypt from "bcrypt"
 
 const userSchema = new Schema(
     {
-        seller_id: {type: String, required: false},
         roles: [{type: Schema.Types.ObjectId, ref: "UserRoles", default: [],}],
         
         name: {type: String, required: false},
         email: {type: String, required: false},
         mobile: {type: String, required: true, unique: true, minlength: 10, maxlength: 10},
-        
-        seller_type : { type : String, required : false},
-        isVerified: {type: Boolean, default: false},
-        
+                
         profile: {type: String, required: false},
         status: {type: String, enum: ["ACTIVE", "BLOCKED"], default: "ACTIVE"},
-                
-        // contacts, bussiness_cards, bank_details, business_details, personal_details
+            
+        password:{ type: String, required : false },
         refreshToken: { type: Map, of: String, default: {} },
-        otp: {type: String, required: false},
-        otpExpires: {type: Date, required: false},
-        
+
     },  
     {
         timestamps: true,
     },
 );
- 
 
-
-userSchema.virtual("personal_details", {
-    ref: "UserPersonalDetails",
-    localField: "_id",
-    foreignField: "user",
-    justOne: true,
-});
-
-userSchema.virtual("contacts", {
-    ref: "UserContacts",
-    localField: "_id",
-    foreignField: "user",
-});
-  
-  // One-to-One relations
-userSchema.virtual("bussiness_card", {
-    ref: "BusinessCard",
-    localField: "_id",
-    foreignField: "user",
-    justOne: true,
-});
-  
-
-userSchema.virtual("business_details", {
-    ref: "UserBusinessDetails",
-    localField: "_id",
-    foreignField: "user",
-    justOne: true,
-});
-  
-
-userSchema.virtual("bank_details", {
-    ref: "UserBankDetails",
-    localField: "_id",
-    foreignField: "user",
-    justOne: true,
-});
 
 
 userSchema.pre("save", async function (next) {
@@ -118,7 +74,6 @@ userSchema.pre(/^find/, function(next) {
     });
     next();
 });
-
 
 userSchema.set('toJSON', {
     virtuals: true,

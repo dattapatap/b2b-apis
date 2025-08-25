@@ -66,7 +66,12 @@ router.route("/logout").post( userController.logoutUser);
 const sellerRouter = Router();
 sellerRouter.use(requireRole(["seller"]));
 
+
 sellerRouter.post("/profile/company-info", profileController.updateCompanyInfo);
+sellerRouter.route("/profile/contacts").get(profileController.getAllContacts).post(profileController.createContact);
+sellerRouter.route("/profile/contacts/:id").get(profileController.getContactById).put(profileController.updateContact).delete(profileController.deleteContact);
+sellerRouter.route("/profile/contacts/reorder").patch(profileController.reorderContacts);
+
 
 // Product APIs
 sellerRouter.get("/products/active", productController.getActiveProducts);
@@ -76,6 +81,8 @@ sellerRouter.get("/products/:id", productController.getProductDetail);
 sellerRouter.post("/products", upload.array('images', 5), productController.createProduct);
 sellerRouter.put("/products", productController.updateProduct);
 sellerRouter.delete("/products/:productId", productController.deleteProduct);
+
+
 // Product management routes
 sellerRouter.post("/product/add-categories", productController.addSubCategoriesToProduct);
 sellerRouter.post("/product/add-descriptions", productController.addProductDescription);
