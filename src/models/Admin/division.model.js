@@ -1,41 +1,33 @@
 import mongoose, { Schema } from "mongoose";
+import MongooseDelete from "mongoose-delete";
 
-const BrandSchema = new Schema(
+const divisionSchema = new Schema(
     {
         name: {
             type: String,
             required: true,
             trim: true,
-        },       
-        image: {
-            type: String,
-        },      
+            default : "Branch Office"
+        },   
         sr_no: {
             type: Number,
             required: true,
         },
-        isDeleted: {
-            type: Boolean,
-            default: false,
-        },
+        status : { type: String, required:true, default: "active"  }
     },
     { timestamps: true }  
 );
 
-BrandSchema.pre("save", function (next) {
-    if (this.name) {
-        this.name = this.name.toLowerCase();
-    }
-    next();
+
+divisionSchema.set("toJSON", {
+  virtuals: true,
+  transform: function (doc, ret) {
+    delete ret.__v;
+    ret.id = ret._id;
+    delete ret._id;
+    return ret;
+  },
 });
 
-BrandSchema.pre("findOneAndUpdate", function (next) {
-    const update = this.getUpdate();
-    if (update.name) {
-        update.name = update.name.toLowerCase();
-        this.setUpdate(update);
-    }
-    next();
-});
-
-export const Brands = mongoose.model("Brands", BrandSchema);
+divisionSchema.plugin(MongooseDelete, { deleted: true, overrideMethods: 'all' });
+export const Divisions = mongoose.model("Divisions", divisionSchema);

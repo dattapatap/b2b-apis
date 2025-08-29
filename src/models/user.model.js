@@ -5,7 +5,7 @@ import bcrypt from "bcrypt"
 const userSchema = new Schema(
     {
         seller_id: {type: String, required: false},
-        roles: [{type: Schema.Types.ObjectId, ref: "UserRoles", default: [],}],
+        roles: { type: [String], enum: ["buyer", "seller"],  default: ["buyer"] },
         
         name: {type: String, required: false},
         email: {type: String, required: false},
@@ -82,8 +82,8 @@ userSchema.methods.isPasswordCorrect = async function(password){
 userSchema.methods.generateAccessToken = function (days) {
     return jwt.sign(
         {
-            _id: this._id,
-            roles: this.roles.map(role => role.role_name),
+            id: this.id,
+            roles: this.roles,
             mobile: this.mobile,
         },
         process.env.ACCESS_TOKEN_SECRET,
@@ -94,9 +94,8 @@ userSchema.methods.generateAccessToken = function (days) {
 };
 
 userSchema.methods.generateRefreshToken = function (days) {    
-    return jwt.sign(
-        {
-            _id: this._id,
+    return jwt.sign( {
+            id: this.id,
         },
         process.env.REFRESH_TOKEN_SECRET,
         {
@@ -106,30 +105,13 @@ userSchema.methods.generateRefreshToken = function (days) {
 };
 
 
-userSchema.pre(/^find/, function(next) {
-    this.populate({
-        path: 'roles', 
-        select: '_id',
-        populate: {
-            path: 'role_id', 
-            model: 'Roles',
-            select: 'role_name', 
-        },
-    });
-    next();
-});
-
-
 userSchema.set('toJSON', {
-    virtuals: true,
-    transform: function (doc, ret) {
-        if (Array.isArray(ret.roles)) {
-            ret.roles = ret.roles
-                .map(role => role?.role_id?.role_name)
-                .filter(Boolean); // Ensure no nulls
-        }
-        return ret;
-    }
+  transform: function (doc, ret) {
+    delete ret.__v;
+    ret.id = ret._id;  
+    delete ret._id; 
+    return ret;
+  }
 });
 
 

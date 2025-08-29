@@ -23,6 +23,7 @@ import * as productSpecificationController from "../../controllers/app/seller/pr
 import * as industriesSellerController from "../../controllers/app/seller/industries.controller.js";
 import * as categoriesSellerController from "../../controllers/app/seller/categories.controller.js";
 import * as sucategoriesController from "../../controllers/app/seller/subcategories.controller.js";
+import * as divisionController from "../../controllers/app/division.controller.js";
 
 
 const router = Router();
@@ -66,10 +67,12 @@ router.route("/logout").post( userController.logoutUser);
 const sellerRouter = Router();
 sellerRouter.use(requireRole(["seller"]));
 
+sellerRouter.get("/contact-divisions" ,  divisionController.getAll);
 
-sellerRouter.post("/profile/company-info", profileController.updateCompanyInfo);
+// sellerRouter.post("/profile/company-info", profileController.updateCompanyInfo);
+
 sellerRouter.route("/profile/contacts").get(profileController.getAllContacts).post(profileController.createContact);
-sellerRouter.route("/profile/contacts/:id").get(profileController.getContactById).put(profileController.updateContact).delete(profileController.deleteContact);
+sellerRouter.route("/profile/contacts/:id").get(profileController.getContactById).patch(profileController.updateContact).delete(profileController.deleteContact);
 sellerRouter.route("/profile/contacts/reorder").patch(profileController.reorderContacts);
 
 
@@ -100,8 +103,8 @@ sellerRouter.get("/product-types", productTypeController.getAllProductTypes);
 sellerRouter.get("/product-industries", industriesSellerController.getAllIndustry);
 sellerRouter.get("/product-categories/:industry", categoriesSellerController.getCategoryByIndustryId);
 sellerRouter.get("/product-sub-categories/:category", sucategoriesController.getAllSubsByCategoryId);
-sellerRouter.get("/product-specifications", productSpecificationController.getProductSpecifications);
-sellerRouter.get("/product-additional-details", productSpecificationController.getProductAdditionalDetails);
+sellerRouter.get("/product-specifications/:productId", productSpecificationController.getProductSpecifications);
+sellerRouter.get("/product-additional-details/:productId", productSpecificationController.getProductAdditionalDetails);
 
 // Mount seller routes under /seller prefix
 router.use("/seller", sellerRouter);

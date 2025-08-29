@@ -10,7 +10,6 @@ import {uploadOnCloudinary} from "../../utils/cloudinary.js";
 import {ApiResponse} from "../../utils/ApiResponse.js";
 import dayjs from "../../utils/daydateconfig.js";
 import { Roles } from "../../models/roles.modal.js";
-import { UserRoles } from "../../models/userRoles.modal.js";
 
 
 // Generate Acess And Refresh Token

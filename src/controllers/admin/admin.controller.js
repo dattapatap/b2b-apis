@@ -1,25 +1,26 @@
 import {asyncHandler} from "../../utils/asyncHandler.js";
 import {ApiError} from "../../utils/ApiError.js";
-import {User} from "../../models/user.model.js";
 import {uploadOnCloudinary} from "../../utils/cloudinary.js";
 import {ApiResponse} from "../../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
 import { sendEmail } from '../../utils/mailer.js';
 import * as crypto from 'crypto';
 import bcrypt from "bcrypt"
+export { AdminUserRoles } from "../../models/adminUserRoles.model.js";
+import { AdminUser } from "../../models/adminUser.model.js";
 
 
 // Generate Access And Refresh Token
-const generateAccessAndRefereshTokens = async (userId, device) => {
+const generateAccessAndRefereshTokens = async (userId) => {
     try {
-        const user = await User.findById(userId);
+        const user = await AdminUser.findById(userId);
         const accessToken = user.generateAccessToken('100d');
         const refreshToken = user.generateRefreshToken('125d');
 
         if (!user.refreshToken || !(user.refreshToken instanceof Map)) {
             user.refreshToken = new Map();
         }
-        user.refreshToken.set(device, refreshToken);
+        user.refreshToken =  refreshToken;
         await user.save({ validateBeforeSave: false });
             
         return { accessToken, refreshToken };
@@ -37,26 +38,24 @@ export const login = asyncHandler(async (req, res) => {
         throw new ApiError(401, "All feild are mandatory");
     }
     
-    const user = await User.findOne({ email }).populate('roles');
+    const user = await AdminUser.findOne({ email }).populate('roles');
     if (!user) {
         throw new ApiError(404, "User does not exist!")
     }
        
     const isPasswordValid = await user.isPasswordCorrect(password)
-    console.log(isPasswordValid);
-    
 
     if (!isPasswordValid) {
         throw new ApiError(401, "Invalid user credentials")
     }
-
+    
     const isAdmin = user.roles.some(role => role.role_id.role_name === 'admin');
     if (!isAdmin) {
         return res.status(403).json({ message: 'Access Denied' });
     }
 
-    const {accessToken, refreshToken} = await generateAccessAndRefereshTokens(user._id, 'web');
-    const loggedInUser = await User.findOne({_id:user._id}).select("-password -refreshToken -otp -otpExpires -passwordResetExpires -passwordResetToken -__v -updatedAt -_id");
+    const {accessToken, refreshToken} = await generateAccessAndRefereshTokens(user._id);
+    const loggedInUser = await AdminUser.findOne({_id:user._id}).select("-password -refreshToken -otp -otpExpires -passwordResetExpires -passwordResetToken -__v -updatedAt");
     const options = { httpOnly: true,  secure: true,};
 
     return res.status(200).cookie("accessToken", accessToken, options)
@@ -68,7 +67,7 @@ export const login = asyncHandler(async (req, res) => {
 
 
 export const logoutUser = asyncHandler(async (req, res) => {
-    await User.findByIdAndUpdate(
+    await AdminUser.findByIdAndUpdate(
         req.user._id,
         {
             $unset: {
@@ -94,7 +93,10 @@ export const logoutUser = asyncHandler(async (req, res) => {
 
 export const refreshAccessToken = asyncHandler(async (req, res) => {
     const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken;
-    const deviceType = "web";
+
+    console.log(incomingRefreshToken);
+    
+
     if (!incomingRefreshToken) {
         throw new ApiError(401, "unauthorized request");
     }
@@ -102,13 +104,13 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
     try {
         const decodedToken = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET);
 
-        const user = await User.findById(decodedToken?._id);
+        const user = await AdminUser.findById(decodedToken?._id);
 
         if (!user) {
             throw new ApiError(401, "Invalid refresh token");
         }
 
-        if (incomingRefreshToken !== user?.refreshToken?.get("web")) {
+        if (incomingRefreshToken !== user?.refreshToken) {
             throw new ApiError(401, "Refresh token is expired or used");
         }
 
@@ -117,7 +119,7 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
             secure: true,
         };
 
-        const {accessToken, refreshToken} = await generateAccessAndRefereshTokens(user._id, 'web');
+        const {accessToken, refreshToken} = await generateAccessAndRefereshTokens(user._id);
 
         return res
             .status(200)
@@ -138,30 +140,10 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
 
 
 export const getCurrentUser = asyncHandler(async (req, res) => {
-    return res.status(200).json(new ApiResponse(200, req.user, "User fetched successfully"));
+    const user = await AdminUser.findById(req.user._id).select('-password -otp -otpExpires -refreshToken -createdAt -updatedAt');
+    return res.status(200).json(new ApiResponse(200, user, "User fetched successfully"));
 });
 
-
-export const updateAccountDetails = asyncHandler(async (req, res) => {
-    const {fullName, email} = req.body;
-
-    if (!fullName || !email) {
-        throw new ApiError(400, "All fields are required");
-    }
-
-    const user = await User.findByIdAndUpdate(
-        req.user?._id,
-        {
-            $set: {
-                fullName,
-                email: email,
-            },
-        },
-        {new: true},
-    ).select("-password");
-
-    return res.status(200).json(new ApiResponse(200, user, "Account details updated successfully"));
-});
 
 export const updateUserAvatar = asyncHandler(async (req, res) => {
     const avatarLocalPath = req.file?.path;
@@ -175,7 +157,7 @@ export const updateUserAvatar = asyncHandler(async (req, res) => {
     }
     
 
-    const user = await User.findByIdAndUpdate(
+    const user = await AdminUser.findByIdAndUpdate(
         req.user?._id,
         {
             $set: {
@@ -198,7 +180,7 @@ export const forgetPassword = asyncHandler ( async( req, res ) =>{
             throw new ApiError(401, "Email is required field");
         }
             
-        user = await User.findOne({ email }).populate('roles');
+        user = await AdminUser.findOne({ email }).populate('roles');
         if (!user) {
             return res.status(404).json({ message: 'User with that email does not exist' });
         }
@@ -237,7 +219,7 @@ export const setPassword = asyncHandler(async (req, res) => {
         throw new ApiError(400, 'All field are mandatory');
     }
 
-    const user = await User.findOne({ email }).select('+otp +otpExpires');
+    const user = await AdminUser.findOne({ email }).select('+otp +otpExpires');
     if (!user) {
         throw new ApiError(400, 'User not found' );
     }
@@ -248,7 +230,7 @@ export const setPassword = asyncHandler(async (req, res) => {
     } 
     
     const hashedPass = await bcrypt.hash(newPassword, 10);
-    await User.findOneAndUpdate(
+    await AdminUser.findOneAndUpdate(
         { email },
         {
             password: hashedPass,

@@ -7,8 +7,8 @@ import { Specifications } from "../../../models/specifications.model.js";
 import { Additionals } from "../../../models/additionals.model.js";
 
 export const getProductSpecifications = asyncHandler(async (req, res) => {
-    const productId = req.body.productId
-       
+    const productId = req.params.productId
+
     const product = await Product.findById(productId).select("subcategories");
     if(!product){
         throw new ApiError(404, "Product Not Found!");
@@ -35,10 +35,6 @@ export const getProductSpecifications = asyncHandler(async (req, res) => {
 
 
 export const getProductAdditionalDetails = asyncHandler(async (req, res) => {
-    const additionalDetails = await Additionals.find({ isDeleted: false })
-        .sort({ displayOrder: 1 }) 
-
-    return res
-        .status(200)
-        .json(new ApiResponse(200, additionalDetails, "Additional details fetched successfully"));
+    const additionalDetails = await Additionals.find({ isDeleted: false }).sort({ displayOrder: 1 }) 
+    return res.status(200).json(new ApiResponse(200, additionalDetails, "Additional details fetched successfully"));
 });

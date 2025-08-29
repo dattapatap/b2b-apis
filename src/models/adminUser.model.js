@@ -2,10 +2,9 @@ import mongoose, {Schema} from "mongoose";
 import jwt from "jsonwebtoken"
 import bcrypt from "bcrypt"
 
-const userSchema = new Schema(
+const adminUserSchema = new Schema(
     {
-        roles: [{type: Schema.Types.ObjectId, ref: "UserRoles", default: [],}],
-        
+        roles: [{type: Schema.Types.ObjectId, ref: "AdminUserRoles", default: [],}],    
         name: {type: String, required: false},
         email: {type: String, required: false},
         mobile: {type: String, required: true, unique: true, minlength: 10, maxlength: 10},
@@ -14,7 +13,11 @@ const userSchema = new Schema(
         status: {type: String, enum: ["ACTIVE", "BLOCKED"], default: "ACTIVE"},
             
         password:{ type: String, required : false },
-        refreshToken: { type: Map, of: String, default: {} },
+        
+        refreshToken: { type: String, required: true },
+        otp: {type: String, required: false},
+        otpExpires: {type: Date, required: false},
+
 
     },  
     {
@@ -24,22 +27,22 @@ const userSchema = new Schema(
 
 
 
-userSchema.pre("save", async function (next) {
+adminUserSchema.pre("save", async function (next) {
     if(!this.isModified("password")) return next();
     this.password = await bcrypt.hash(this.password, 10)
     next()
 })
 
-userSchema.methods.isPasswordCorrect = async function(password){ 
+adminUserSchema.methods.isPasswordCorrect = async function(password){ 
     return await bcrypt.compare(password, this.password)
 }
 
 
-userSchema.methods.generateAccessToken = function (days) {
+adminUserSchema.methods.generateAccessToken = function (days) {
     return jwt.sign(
         {
-            _id: this._id,
-            roles: this.roles.map(role => role.role_name),
+            id: this.id,
+            roles: this.roles,
             mobile: this.mobile,
         },
         process.env.ACCESS_TOKEN_SECRET,
@@ -49,10 +52,10 @@ userSchema.methods.generateAccessToken = function (days) {
     );
 };
 
-userSchema.methods.generateRefreshToken = function (days) {    
+adminUserSchema.methods.generateRefreshToken = function (days) {    
     return jwt.sign(
         {
-            _id: this._id,
+            id: this.id,
         },
         process.env.REFRESH_TOKEN_SECRET,
         {
@@ -62,10 +65,10 @@ userSchema.methods.generateRefreshToken = function (days) {
 };
 
 
-userSchema.pre(/^find/, function(next) {
+adminUserSchema.pre(/^find/, function(next) {
     this.populate({
         path: 'roles', 
-        select: '_id',
+        select: '_id role_id',
         populate: {
             path: 'role_id', 
             model: 'Roles',
@@ -75,17 +78,21 @@ userSchema.pre(/^find/, function(next) {
     next();
 });
 
-userSchema.set('toJSON', {
-    virtuals: true,
-    transform: function (doc, ret) {
-        if (Array.isArray(ret.roles)) {
-            ret.roles = ret.roles
-                .map(role => role?.role_id?.role_name)
-                .filter(Boolean); // Ensure no nulls
-        }
-        return ret;
+adminUserSchema.set("toJSON", {
+  virtuals: true,
+  transform: function (doc, ret) {
+    if (Array.isArray(ret.roles)) {
+      ret.roles = ret.roles
+        .map((role) => role?.role_id?.role_name)
+        .filter(Boolean);
     }
+    delete ret.__v;
+    ret.id = ret._id;
+    delete ret._id;
+    return ret;
+  },
 });
 
 
-export const User = mongoose.model("User", userSchema);
+
+export const AdminUser = mongoose.model("AdminUser", adminUserSchema);

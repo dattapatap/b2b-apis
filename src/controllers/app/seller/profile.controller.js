@@ -238,79 +238,76 @@ export const createContact = asyncHandler(async (req, res) => {
       return res.status(500).json(new ApiResponse(500, "Something went wrong", error.message));
     }
     
-  });
+});
 
 
 
 
 export const updateContact = asyncHandler(async (req, res) => {
-    const { client_name, rating, comment } = req.body;
-    const clientFile = req.file;
+    const loggedUser = req.user._id;
     const { id } = req.params;
 
+    // Joi schema for partial update (PATCH)
     const schema = Joi.object({
-        client_name: Joi.string().min(3).max(50).required(),
-        rating: Joi.string().min(1).max(5).required(),
-        comment:Joi.string().min(30).max(500).required(),
-        image: Joi.object({
-            originalname: Joi.string().regex(/\.(jpg|jpeg|png|webp)$/i).required().messages({
-                "string.pattern.base": "Only image files are allowed.",
-                "any.required": "File name is required."
-            }),
-            size: Joi.number().max(2 * 1024 * 1024).messages({
-                "number.max": "File size should not exceed 2MB."
-            })
-        }).unknown(true).optional()
+        division: Joi.string().min(3).max(100).optional(),
+        contact_person: Joi.string().min(3).max(100).optional(),
+        address: Joi.object({
+            address_line: Joi.string().min(5).max(200).optional(),
+            landmark: Joi.string().allow("").optional(),
+            city: Joi.string().min(2).max(50).optional(),
+            state: Joi.string().min(2).max(50).optional(),
+            postal_code: Joi.string().pattern(/^[0-9]{5,10}$/).optional(),
+            country: Joi.string().min(2).max(50).optional(),
+        }).optional(),
+
+        mobile_no: Joi.string().pattern(/^\+?[0-9]{7,15}$/).optional().messages({ "string.pattern.base": "Mobile number must be valid" }),
+        landline_no: Joi.string().allow("").optional(),
+        toll_free_no: Joi.string().allow("").optional(),
+        email: Joi.string().email().optional().messages({ "string.email": "Invalid email format" }),
+        fax_no: Joi.string().allow("").optional(),
     });
-    await schema.validateAsync(
-        { client_name, rating, comment, ...(clientFile && { image: clientFile })  }, { abortEarly: false }
-    );
 
-    const session = await mongoose.startSession();
-    session.startTransaction();
+    await schema.validateAsync(req.body, { abortEarly: false });
+
     try {
-        const testimonials = await Testimonials.findById(id).session(session);
-        if (!testimonials) {
-            await session.abortTransaction();
-            session.endSession();
-            return res.status(404).json(new ApiResponse(404, null, "Testimonials not found"));
-        }
+            // Find and update contact
+            const updatedContact = await UserContacts.findOneAndUpdate(
+            { _id: id, user_id: loggedUser }, 
+            { $set: req.body },
+            { new: true, runValidators: true }
+            );
 
-        // Handle image replacement
-        let imageUrl = testimonials.image;
-        if (clientFile) {
-            await deleteLocalFile(testimonials.image);          
-            imageUrl = await uploadLocally(clientFile.path, "testimonials");
-        }
+            if (!updatedContact) {
+                return res.status(404).json(new ApiResponse(404, null, "Contact not found"));
+            }
 
-        // Update fields
-        testimonials.client_name = client_name;
-        testimonials.rating      = rating;
-        testimonials.comment     = comment;
-        testimonials.image       = imageUrl;
-
-        await testimonials.save({ session });
-        await session.commitTransaction();
-        session.endSession();
-
-        return res.status(200).json(new ApiResponse(200, testimonials, "Testimonials updated successfully"));
+            return res.status(200).json(new ApiResponse(200, updatedContact, "Contact updated successfully"));
     } catch (error) {
-        await session.abortTransaction();
-        session.endSession();
-        return res.status(500).json(new ApiResponse(500, null, "Something went wrong",  error.message));
+        return res.status(500).json(new ApiResponse(500, null, error.message));
     }
 
 });
 
 export const deleteContact = asyncHandler(async (req, res) => {
-    const {id} = req.params;
-    const testimonials = await Testimonials.findOne({ _id: id });
-    if (!testimonials) {
-        return res.status(404).json(new ApiResponse(404, null, "Testimonials not found or already deleted"));
+    const { id } = req.params;
+    const loggedUser = req.user._id;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json(new ApiResponse(400, null, "Invalid contact id"));
     }
-    await testimonials.delete();
-    return res.status(200).json(new ApiResponse(200, testimonials, "Testimonials deleted successfully"));
+
+    const contact = await UserContacts.findOneAndDelete({
+        _id: id,
+        user_id: loggedUser, 
+    });
+
+    if (!contact) {
+        return res.status(404).json(new ApiResponse(404, null, "Contact not found"));
+    }
+
+    return res.status(200).json(new ApiResponse(200, contact, "Contact deleted successfully"));
 });
+
 
 export const reorderContacts = asyncHandler( async ( req, res) =>{
     const { testimonials }  = req.body

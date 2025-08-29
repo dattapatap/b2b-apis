@@ -1,4 +1,5 @@
 import mongoose, { Schema } from "mongoose";
+import MongooseDelete from "mongoose-delete";
 
 const AppBannersSchema = new Schema(
     {
@@ -18,10 +19,6 @@ const AppBannersSchema = new Schema(
             type: Number,
             required: true,
         },
-        isDeleted: {
-            type: Boolean,
-            default: false,
-        },
     },
     { 
         timestamps: true,
@@ -38,5 +35,6 @@ AppBannersSchema.set('toJSON', {
   }
 });
 
+AppBannersSchema.plugin(MongooseDelete, { deleted: true, overrideMethods: 'all' });
 
 export const AppBanners = mongoose.model("AppBanners", AppBannersSchema);

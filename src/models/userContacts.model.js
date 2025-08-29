@@ -3,7 +3,7 @@ import mongoose, {Schema} from "mongoose";
 const userContactsSchema = new Schema(
     {
         user_id: { type: Schema.Types.ObjectId, ref: "User", required: true },
-        division: {type: String, required: true, default: "Head Office"},
+        division: {type: Schema.Types.ObjectId, ref: "Divisions"},
         contact_person: String,
         address: {
           address_line: { type: String },
@@ -25,5 +25,15 @@ const userContactsSchema = new Schema(
       timestamps: true,
     },
 );
+
+userContactsSchema.set("toJSON", {
+  virtuals: true,
+  transform: function (doc, ret) {
+    delete ret.__v;
+    ret.id = ret._id;
+    delete ret._id;
+    return ret;
+  },
+});
 
 export const UserContacts = mongoose.model("UserContacts", userContactsSchema);

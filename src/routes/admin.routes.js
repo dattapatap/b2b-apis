@@ -10,18 +10,19 @@ import * as productTypeController from "../controllers/admin/productType.control
 import * as specificationController from "../controllers/admin/specifications.controller.js"
 import * as additionalController from "../controllers/admin/additionals.controller.js"
 import * as groupsController from "../controllers/admin/groups.controller.js"
+import * as divisionController from "../controllers/admin/division.controller.js"
 import * as appFlashController from "../controllers/admin/App/flashScreen.controller.js"
 import * as appBannersController from "../controllers/admin/App/appBanner.controller.js"
 
 
 import {upload} from "../middlewares/multer.middleware.js";
-import {verifyJWT} from "../middlewares/auth.middleware.js";
-import {requireRole} from "../middlewares/role.middleware.js";
+import {verifyJWT} from "../middlewares/authAdmin.middleware.js";
+import {requireRole} from "../middlewares/adminRole.middleware.js";
 
 const router = Router();
 
 // Public routes
-router.post("/sign-in", upload.none(), adminController.login);
+router.post("/sign-in", adminController.login);
 router.post("/forget-password", adminController.forgetPassword);
 router.post("/set-password", adminController.setPassword);
 
@@ -34,7 +35,6 @@ router.use(adminAuthMiddleware);
 router.post("/sign-out", verifyJWT, adminController.logoutUser);
 
 router.get("/user", adminController.getCurrentUser);
-router.patch("/update-account", adminController.updateAccountDetails);
 router.patch("/avatar", upload.single("avatar"), adminController.updateUserAvatar);
 
 
@@ -44,6 +44,7 @@ router.get("/cities/:id", citiesController.getCityById);
 router.post("/cities", upload.single("image"), citiesController.createCity);
 router.put("/cities/:id", upload.single("image"), citiesController.updateCity);
 router.delete("/cities/:id", citiesController.deleteCity);
+
 
 router.get("/industries", industriesController.getAllIndustry);
 router.get("/industries/:id", industriesController.getIndustryById);
@@ -101,6 +102,15 @@ router.route("/flash-screens/:id/status").patch(appFlashController.changeFlashBa
 router.route("/app-banners").get(appBannersController.getAllAppBanners).post(upload.single("image"), appBannersController.createAppBanner);
 router.route("/app-banners/:id").get(appBannersController.getAppBannerById).put(upload.single("image"), appBannersController.updateAppBanner).delete(appBannersController.deleteAppBanner);
 router.route("/app-banners/:id/status").patch(appBannersController.changeAppBannerStatus);
+
+
+// Relational Apis
+router.route("/relational/divisions").get(divisionController.getAll).post(divisionController.create);
+router.route("/relational/divisions/:id").get(divisionController.getById).put(upload.single("image"), divisionController.update).delete(divisionController.deleteDivision);
+router.route("/relational/divisions/:id/status").patch(divisionController.changeStatus);
+router.route("/relational/divisions/reorder").patch(divisionController.reorderDivisions);
+
+
 
 
 export default router;

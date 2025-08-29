@@ -10,14 +10,13 @@ import {uploadOnCloudinary} from "../../utils/cloudinary.js";
 import {ApiResponse} from "../../utils/ApiResponse.js";
 import dayjs from "../../utils/daydateconfig.js";
 import { Roles } from "../../models/roles.modal.js";
-import { UserRoles } from "../../models/userRoles.modal.js";
 
 // Generate Acess And Refresh Token
 const generateAccessAndRefereshTokens = async (userId, device) => {
     try {
         const user = await User.findById(userId);
-        const accessToken = user.generateAccessToken('100d');
-        const refreshToken = user.generateRefreshToken('125d');
+        const accessToken = user.generateAccessToken('2d');
+        const refreshToken = user.generateRefreshToken('15d');
 
         if (!user.refreshToken || !(user.refreshToken instanceof Map)) {
             user.refreshToken = new Map();
@@ -45,8 +44,8 @@ const generateOTP = () => {
 // Send OTP
 export const sendOtp = asyncHandler(async (req, res) => {
     const { mobile } = req.body;    
-    const session = await mongoose.startSession();
 
+    const session = await mongoose.startSession();
     session.startTransaction();
     
     const loginSchema = Joi.object({
@@ -54,21 +53,14 @@ export const sendOtp = asyncHandler(async (req, res) => {
     });
     await loginSchema.validateAsync({ mobile }, { abortEarly: false });
 
-    let roleId = await Roles.findOne({ role_name: "buyer" });
     let currUser = await User.findOne({ mobile :mobile}).session(session);
     if (!currUser) {
         currUser = await User.create([{ mobile }], { session });
         currUser = currUser[0];
     }
 
-    const existingUserRole = await UserRoles.findOne({ role_id: roleId._id, user_id: currUser._id }).session(session);
-    if (!existingUserRole) {
-        const userRole = await UserRoles.create([{ role_id: roleId._id, assignedAt: dayjs().tz().toDate(), user_id: currUser._id }], { session });
-        currUser.roles.push(userRole[0]._id);
-    }
-
     const otp = generateOTP();
-    const otpExpires = dayjs().tz().add(20, "minute").toDate();
+    const otpExpires = dayjs().tz().add(10, "minute").toDate();
 
     currUser.otp = otp;
     currUser.otpExpires = otpExpires;
@@ -105,32 +97,35 @@ export const verifyOtp = asyncHandler(async (req, res) => {
         throw new ApiError(400,  "Invalid OTP");
     }
 
-    const {accessToken, refreshToken} = await generateAccessAndRefereshTokens(currUser._id, "mobile");
-    const loggedInUser = await User.findOne({_id:currUser._id}).select("-otp -otpExpires -refreshToken -__v -createdAt -updatedAt");
+
+    currUser.otp = undefined;
+    currUser.otpExpires = undefined;
+    await currUser.save();
+
+    const {accessToken, refreshToken} = await generateAccessAndRefereshTokens(currUser.id, "mobile");
+    const loggedInUser = await User.findOne({_id:currUser.id}).select("-otp -otpExpires -refreshToken -__v -createdAt -updatedAt");
     const options = { httpOnly: true,  secure: true,};
 
-    return res.cookie("accessToken", accessToken, options).cookie("refreshToken", refreshToken, options)
+    return res.cookie("accessToken", accessToken, options , { ...options, maxAge: 2 * 24 * 60 * 60 * 1000 })
+                .cookie("refreshToken", refreshToken, options, { ...options, maxAge: 15 * 24 * 60 * 60 * 1000 })
                 .json( new ApiResponse( 200, {user: loggedInUser, accessToken, refreshToken},  "User logged In Successfully"));
 });
 
 
 export const assignSellerRole = asyncHandler( async (req, res ) => {
-    let currUser = req.user ;
-
-    const roleDoc = await Roles.findOne({ role_name: 'seller' });
-    if (!roleDoc) {
-        throw new ApiError(400,  "Invalid role");
+    const currUser = await User.findById(req.user._id);
+    if (!currUser) {
+        throw new ApiError(404, "User not found");
     }
 
-    const existingUserRole = await UserRoles.findOne({ role_id: roleDoc._id, user_id: currUser._id,});
-    if (!existingUserRole) {
-        const userRole = await UserRoles.create({ role_id: roleDoc._id, assignedAt: dayjs().tz().toDate(), user_id: currUser._id, });
-        currUser.roles.push(userRole._id); 
+    if (!currUser.roles.includes("seller")) {
+        currUser.roles.push("seller");
         await currUser.save();
     }
 
-    const loggedInUser = await User.findOne({_id:currUser._id}).select("-otp -otpExpires -refreshToken -__v -createdAt -updatedAt");
-    return res.status(200).json(new ApiResponse(200, loggedInUser, "Seller role has been assigned successfully"));
+    const loggedInUser = await User.findById(currUser._id).select("-otp -otpExpires -refreshToken -__v -createdAt -updatedAt");
+
+    return res.status(200).json( new ApiResponse(200, loggedInUser, "Seller role has been assigned successfully"));
 })
 
 
@@ -141,35 +136,26 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
         throw new ApiError(401, "unauthorized request");
     }   
 
+    console.log(incomingRefreshToken);
+    
+
     try {                
         const decodedToken = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET);
 
-        const user = await User.findById(decodedToken?._id);
+        const user = await User.findById(decodedToken?.id);
         if (!user) {
             throw new ApiError(401, null,  "Invalid refresh token");
         }
-
-        console.log("Before Updating Refresh Token:", user.refreshToken);
-
         if (incomingRefreshToken !== user?.refreshToken?.get(deviceType)) {
             throw new ApiError(401, "Refresh token is expired or used");
         }
 
-        const options = {
-            httpOnly: true,
-            secure: true,
-        };
+        const options = { httpOnly: true, secure: true, };
 
         const {accessToken, refreshToken} = await generateAccessAndRefereshTokens(user._id, "mobile");
-        return res.cookie("accessToken", accessToken, options)
-            .cookie("refreshToken", refreshToken, options)
-            .json(
-                new ApiResponse(
-                    200,
-                    {accessToken, refreshToken: refreshToken},
-                    "Access token refreshed",
-                ),
-            );
+        return res.cookie("accessToken", accessToken, options, { ...options, maxAge: 2 * 24 * 60 * 60 * 1000 })
+            .cookie("refreshToken", refreshToken, options, { ...options, maxAge: 15 * 24 * 60 * 60 * 1000 })
+            .json( new ApiResponse( 200, {accessToken, refreshToken: refreshToken},  "Access token refreshed", ), );
 
     } catch (error) {     
         throw new ApiError(401, null, error?.message || "Invalid refresh token");
