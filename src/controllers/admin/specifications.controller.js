@@ -11,7 +11,6 @@ export const getAllSpecifications = asyncHandler(async (req, res) => {
     const limit = parseInt(req.query.limit) || 20; 
     const skip = (page - 1) * limit;
 
-    console.log("info", "Fetching all specifications from the database");
     const specifications = await Specifications.find({ isDeleted: false })
                             .skip(skip).limit(limit).select("-isDeleted -createdAt -updatedAt -__v")
                             .populate({
