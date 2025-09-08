@@ -1,4 +1,5 @@
 import mongoose, { Schema } from "mongoose";
+import MongooseDelete from "mongoose-delete";
 
 const FlashBannersSchema = new Schema(
     {
@@ -37,6 +38,9 @@ FlashBannersSchema.set('toJSON', {
     return ret;
   }
 });
+
+
+FlashBannersSchema.plugin(MongooseDelete, { deleted: true, overrideMethods: 'all' });
 
 
 export const FlashBanner = mongoose.model("FlashBanners", FlashBannersSchema);

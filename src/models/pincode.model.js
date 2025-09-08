@@ -13,13 +13,13 @@ const pincodeSchema = new Schema(
             required: true
         },
         city: {
-            type:Schema.Types.ObjectId,
+            type:mongoose.Schema.Types.ObjectId,
             ref: "Cities", 
             required: true
         },
-        state_id: {
-            type: Schema.Types.ObjectId,
-            ref: "State",
+        state: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "States",
             required: true
         },
         status: {
@@ -31,6 +31,15 @@ const pincodeSchema = new Schema(
     {timestamps: true},
 );
 
+pincodeSchema.set("toJSON", {
+  virtuals: true,
+  transform: function (doc, ret) {
+    delete ret.__v;
+    ret.id = ret._id;
+    delete ret._id;
+    return ret;
+  },
+});
 
 pincodeSchema.plugin(MongooseDelete, { deleted: true, overrideMethods: "all" });
 

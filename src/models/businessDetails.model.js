@@ -71,4 +71,5 @@ BusinessDetailsSchema.set('toJSON', {
 
 
 
+
 export const BusinessDetails = mongoose.model("BusinessDetails", BusinessDetailsSchema);

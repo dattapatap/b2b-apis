@@ -1,4 +1,5 @@
 import mongoose, { Schema } from "mongoose";
+import MongooseDelete from "mongoose-delete";
 
 const BrandSchema = new Schema(
     {
@@ -37,5 +38,21 @@ BrandSchema.pre("findOneAndUpdate", function (next) {
     }
     next();
 });
+
+
+
+
+BrandSchema.set("toJSON", {
+  virtuals: true,
+  transform: function (doc, ret) {
+    delete ret.__v;
+    ret.id = ret._id;
+    delete ret._id;
+    return ret;
+  },
+});
+
+BrandSchema.plugin(MongooseDelete, { deleted: true, overrideMethods: 'all' });
+
 
 export const Brands = mongoose.model("Brands", BrandSchema);
