@@ -1,4 +1,5 @@
 import mongoose, {Schema} from "mongoose";
+import MongooseDelete from "mongoose-delete";
 
 const personalDetailsSchema = new Schema(
     {
@@ -31,5 +32,17 @@ const personalDetailsSchema = new Schema(
     },
     {timestamps: true},
 );
+
+personalDetailsSchema.set("toJSON", {
+  virtuals: true,
+  transform: function (doc, ret) {
+    delete ret.__v;
+    ret.id = ret._id;
+    delete ret._id;
+    return ret;
+  },
+});
+
+personalDetailsSchema.plugin(MongooseDelete, { deleted: true, overrideMethods: 'all' });
 
 export const UserPersonalDetails = mongoose.model("UserPersonalDetails", personalDetailsSchema);

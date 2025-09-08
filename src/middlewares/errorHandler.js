@@ -12,7 +12,10 @@ const errorHandler = (err, req, res, next) => {
         errors = {};
 
         err.details.forEach((detail) => {
-            const key = detail.path.join('.');
+            const key = Array.isArray(detail.path)
+                ? detail.path.join('.')
+                : detail.path || 'unknown';
+
             errors[key] = detail.message.replace(/\"/g, '');
         });
     }

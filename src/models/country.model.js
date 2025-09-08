@@ -16,10 +16,21 @@ const countrySchema = new Schema(
             required: true,
             unique: true
         },
+        status : { type:String, required : true, default : 'active' } 
 
     },
     { timestamps: true }
 );
+
+countrySchema.set("toJSON", {
+  virtuals: true,
+  transform: function (doc, ret) {
+    delete ret.__v;
+    ret.id = ret._id;
+    delete ret._id;
+    return ret;
+  },
+});
 
 countrySchema.plugin(MongooseDelete, { deleted: true, overrideMethods: "all" });
 

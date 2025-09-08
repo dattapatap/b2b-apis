@@ -47,7 +47,6 @@ industrySchema.virtual("categories", {
     justOne: false, 
 });
 
-industrySchema.plugin(MongooseDelete, { deleted: true, overrideMethods: 'all' });
 industrySchema.set("toJSON", {
     transform: function (doc, ret) {
         delete ret.__v;
@@ -58,5 +57,6 @@ industrySchema.set("toJSON", {
 });
 
 
+industrySchema.plugin(MongooseDelete, { deleted: true, overrideMethods: 'all' });
 
 export const Industries = mongoose.model("Industries", industrySchema);

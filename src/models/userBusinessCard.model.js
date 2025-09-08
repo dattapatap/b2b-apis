@@ -1,4 +1,5 @@
 import mongoose, { Schema } from "mongoose";
+import MongooseDelete from "mongoose-delete";
 
 const userBusinessCardSchema = new Schema(
     {
@@ -10,5 +11,18 @@ const userBusinessCardSchema = new Schema(
         timestamps: true,
     },
 );
+
+userBusinessCardSchema.set("toJSON", {
+  virtuals: true,
+  transform: function (doc, ret) {
+    delete ret.__v;
+    ret.id = ret._id;
+    delete ret._id;
+    return ret;
+  },
+});
+
+userBusinessCardSchema.plugin(MongooseDelete, { deleted: true, overrideMethods: 'all' });
+
 
 export const UserBussinessCard = mongoose.model("UserBussinessCard", userBusinessCardSchema);

@@ -20,8 +20,7 @@ const userSchema = new Schema(
         // contacts, bussiness_cards, bank_details, business_details, personal_details
         refreshToken: { type: Map, of: String, default: {} },
         otp: {type: String, required: false},
-        otpExpires: {type: Date, required: false},
-        
+        otpExpires: {type: Date, required: false},        
     },  
     {
         timestamps: true,

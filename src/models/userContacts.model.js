@@ -1,4 +1,5 @@
 import mongoose, {Schema} from "mongoose";
+import MongooseDelete from "mongoose-delete";
 
 const userContactsSchema = new Schema(
     {
@@ -35,5 +36,8 @@ userContactsSchema.set("toJSON", {
     return ret;
   },
 });
+
+
+userContactsSchema.plugin(MongooseDelete, { deleted: true, overrideMethods: 'all' });
 
 export const UserContacts = mongoose.model("UserContacts", userContactsSchema);

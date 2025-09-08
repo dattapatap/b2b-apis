@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import MongooseDelete from "mongoose-delete";
 
 const additinalsSchema = new mongoose.Schema(
     {
@@ -30,5 +31,17 @@ const additinalsSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
+
+additinalsSchema.set("toJSON", {
+  virtuals: true,
+  transform: function (doc, ret) {
+    delete ret.__v;
+    ret.id = ret._id;
+    delete ret._id;
+    return ret;
+  },
+});
+
+additinalsSchema.plugin(MongooseDelete, { deleted: true, overrideMethods: 'all' });
 
 export const Additionals = mongoose.model("ProductAdditionals", additinalsSchema);
