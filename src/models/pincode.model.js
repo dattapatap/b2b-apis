@@ -12,16 +12,8 @@ const pincodeSchema = new Schema(
             type: String,
             required: true
         },
-        city: {
-            type:Schema.Types.ObjectId,
-            ref: "Cities", 
-            required: true
-        },
-        state_id: {
-            type: Schema.Types.ObjectId,
-            ref: "State",
-            required: true
-        },
+        city: { type: mongoose.Schema.Types.ObjectId, ref: "Cities", required: true },
+        state: { type: mongoose.Schema.Types.ObjectId, ref: "States", required: true },
         status: {
             type: String,
             enum: ["active", "inactive"],
@@ -33,5 +25,13 @@ const pincodeSchema = new Schema(
 
 
 pincodeSchema.plugin(MongooseDelete, { deleted: true, overrideMethods: "all" });
+pincodeSchema.set('toJSON', {
+  transform: function (doc, ret) {
+    delete ret.__v;
+    ret.id = ret._id;  
+    delete ret._id; 
+    return ret;
+  }
+});
 
 export const Pincode = mongoose.model("Pincode", pincodeSchema);

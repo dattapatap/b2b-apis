@@ -27,7 +27,10 @@ const personalDetailsSchema = new Schema(
         google_business_url: {type: String},
         facebook_url: {type: String},
         map_url: {type: String},
+        
         company_logo: {type: String},
+
+
     },
     {timestamps: true},
 );

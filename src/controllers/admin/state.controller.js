@@ -5,7 +5,6 @@ import {States} from "../../models/state.model.js";
 import {StateSchema} from "../../validators/admin/stateValidator.js";
 
 export const createState = asyncHandler(async (req, res) => {
-    console.log("Creating state with body:", req.body);
     const {state_name, state_code, country_id} = req.body;
     await StateSchema.validateAsync(
         {state_name, state_code, country_id, operation: "create"},
@@ -15,7 +14,7 @@ export const createState = asyncHandler(async (req, res) => {
     return res.status(201).json(new ApiResponse(201, country, "State created successfully"));
 });
 
-// update a state
+
 export const updateState = asyncHandler(async (req, res) => {
     const {id} = req.params;
     const {state_name, state_code, country_id} = req.body;
@@ -32,7 +31,7 @@ export const updateState = asyncHandler(async (req, res) => {
     return res.status(200).json(new ApiResponse(200, updatedState, "State updated successfully"));
 });
 
-// delete a state
+
 export const deleteState = asyncHandler(async (req, res) => {
     const {id} = req.params;
 

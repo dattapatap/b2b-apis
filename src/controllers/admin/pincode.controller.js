@@ -48,8 +48,6 @@ export const getPinCodeById = asyncHandler(async (req, res) => {
 
 // create a new pin_code
 export const createPinCode = asyncHandler(async (req, res) => {
-    console.log("Creating country with body:", req.body);
-
     const {pin_code, zone, city, state_id} = req.body;
     await pincodeSchema.validateAsync(
         {pin_code, zone, city, state_id, operation: "create"},
