@@ -16,11 +16,7 @@ const countrySchema = new Schema(
             required: true,
             unique: true
         },
-<<<<<<< HEAD
-        status : { type:String, required : true, default : 'active' } 
-=======
         country_status: {  type: String, default : "inactive"  },
->>>>>>> development
 
     },
     { timestamps: true }

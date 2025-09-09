@@ -12,21 +12,6 @@ const userBusinessCardSchema = new Schema(
     },
 );
 
-<<<<<<< HEAD
-userBusinessCardSchema.set("toJSON", {
-  virtuals: true,
-  transform: function (doc, ret) {
-    delete ret.__v;
-    ret.id = ret._id;
-    delete ret._id;
-    return ret;
-  },
-});
-
-userBusinessCardSchema.plugin(MongooseDelete, { deleted: true, overrideMethods: 'all' });
-
-
-=======
 userBusinessCardSchema.set('toJSON', {
   transform: function (doc, ret) {
     delete ret.__v;
@@ -36,5 +21,4 @@ userBusinessCardSchema.set('toJSON', {
   }
 });
 
->>>>>>> development
 export const UserBussinessCard = mongoose.model("UserBussinessCard", userBusinessCardSchema);

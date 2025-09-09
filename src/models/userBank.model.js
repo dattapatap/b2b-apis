@@ -15,22 +15,6 @@ const userBankDetailsSchema = new Schema(
     },
 );
 
-<<<<<<< HEAD
-userBankDetailsSchema.set("toJSON", {
-  virtuals: true,
-  transform: function (doc, ret) {
-    delete ret.__v;
-    ret.id = ret._id;
-    delete ret._id;
-    return ret;
-  },
-});
-
-userBankDetailsSchema.plugin(MongooseDelete, { deleted: true, overrideMethods: 'all' });
-
-
-
-=======
 
 userBankDetailsSchema.set('toJSON', {
   transform: function (doc, ret) {
@@ -41,5 +25,4 @@ userBankDetailsSchema.set('toJSON', {
   }
 });
 
->>>>>>> development
 export const UserBankDetails = mongoose.model("UserBankDetails", userBankDetailsSchema);
