@@ -6,6 +6,7 @@ import {requireRole} from "../../middlewares/role.middleware.js";
 
 import * as flashScreensController from "../../controllers/app/flashScreens.controller.js";
 import * as homeBannersController from "../../controllers/app/homeBanner.controller.js";
+import * as contactsController from "../../controllers/app/seller/Contact/contacts.controller.js";
 import * as profileController from "../../controllers/app/seller/profile.controller.js";
 
 import * as userController from "../../controllers/app/user.controller.js";
@@ -24,6 +25,8 @@ import * as industriesSellerController from "../../controllers/app/seller/indust
 import * as categoriesSellerController from "../../controllers/app/seller/categories.controller.js";
 import * as sucategoriesController from "../../controllers/app/seller/subcategories.controller.js";
 import * as divisionController from "../../controllers/app/division.controller.js";
+import * as pincodeController from "../../controllers/app/pincode.controller.js";
+import * as countriesController from "../../controllers/app/countries.controller.js";
 
 
 const router = Router();
@@ -67,13 +70,20 @@ router.route("/logout").post( userController.logoutUser);
 const sellerRouter = Router();
 sellerRouter.use(requireRole(["seller"]));
 
+
+// Seller Profile Apis
 sellerRouter.get("/contact-divisions" ,  divisionController.getAll);
+sellerRouter.get("/get-address-by-pincode" ,  pincodeController.getPincodeDetails);
+sellerRouter.get("/countries" ,  countriesController.getAll);
 
-// sellerRouter.post("/profile/company-info", profileController.updateCompanyInfo);
+sellerRouter.route("/profile/contacts").get(contactsController.getAllContacts).post(contactsController.createContact);
+sellerRouter.route("/profile/contacts/:id").get(contactsController.getContactById).patch(contactsController.updateContact).delete(contactsController.deleteContact);
+sellerRouter.route("/profile/contacts/reorder").patch(contactsController.reorderContacts);
 
-sellerRouter.route("/profile/contacts").get(profileController.getAllContacts).post(profileController.createContact);
-sellerRouter.route("/profile/contacts/:id").get(profileController.getContactById).patch(profileController.updateContact).delete(profileController.deleteContact);
-sellerRouter.route("/profile/contacts/reorder").patch(profileController.reorderContacts);
+sellerRouter.post("/profile/update-bank-info", profileController.updateBankDetails);
+sellerRouter.post("/profile/update-bussiness-card", upload.fields([{ name: "front_view" }, { name: "back_view" }]) , profileController.updateBusinessCard);
+
+
 
 
 // Product APIs

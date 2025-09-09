@@ -17,7 +17,6 @@ const userSchema = new Schema(
         profile: {type: String, required: false},
         status: {type: String, enum: ["ACTIVE", "BLOCKED"], default: "ACTIVE"},
                 
-        // contacts, bussiness_cards, bank_details, business_details, personal_details
         refreshToken: { type: Map, of: String, default: {} },
         otp: {type: String, required: false},
         otpExpires: {type: Date, required: false},        

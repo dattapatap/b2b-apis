@@ -16,7 +16,11 @@ const countrySchema = new Schema(
             required: true,
             unique: true
         },
+<<<<<<< HEAD
         status : { type:String, required : true, default : 'active' } 
+=======
+        country_status: {  type: String, default : "inactive"  },
+>>>>>>> development
 
     },
     { timestamps: true }
@@ -33,5 +37,13 @@ countrySchema.set("toJSON", {
 });
 
 countrySchema.plugin(MongooseDelete, { deleted: true, overrideMethods: "all" });
+countrySchema.set('toJSON', {
+  transform: function (doc, ret) {
+    delete ret.__v;
+    ret.id = ret._id;  
+    delete ret._id; 
+    return ret;
+  }
+});
 
 export const Countries = mongoose.model("Countries", countrySchema);

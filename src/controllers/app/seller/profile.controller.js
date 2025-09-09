@@ -2,38 +2,66 @@ import Joi from "joi";
 import mongoose from "mongoose";
 import slugify from "slugify";
 
-
-import { asyncHandler } from "../../../utils/asyncHandler.js";
-import { ApiError } from "../../../utils/ApiError.js";
-import { ApiResponse } from "../../../utils/ApiResponse.js";
+import {asyncHandler} from "../../../utils/asyncHandler.js";
+import {ApiError} from "../../../utils/ApiError.js";
+import {ApiResponse} from "../../../utils/ApiResponse.js";
 
 import {User} from "../../../models/user.model.js";
-import { BusinessDetails } from "../../../models/businessDetails.model.js";
+import {BusinessDetails} from "../../../models/businessDetails.model.js";
+import {UserContacts} from "../../../models/userContacts.model.js";
 
-import { Product } from "../../../models/product.model.js";
-import { SubCategories } from "../../../models/subCategories.model.js";
-import { UserContacts } from "../../../models/userContacts.model.js";
+import {UserPersonalDetails} from "../../../models/userPersonalDetails.model.js";
+import {UserBankDetails} from "../../../models/userBank.model.js";
+import { UserBussinessCard } from "../../../models/userBusinessCard.model.js";
+import { deleteFromCloudinary, uploadOnCloudinary } from "../../../utils/cloudinary.js";
+// import {CompanyInformation} from "../../../models/companyInformation.model.js";
 
-
-export const updateCompanyInfo = asyncHandler ( async( req, resp) => {
-    const { company_name, gst_no, product_name, product_price, contact_name, whatsapp } = req.body;    
+export const updateCompanyInfo = asyncHandler(async (req, resp) => {
+    const {company_name, gst_no, product_name, product_price, contact_name, whatsapp} = req.body;
     const loggedUser = req.user._id;
-    
+
     const schema = Joi.object({
-        company_name: Joi.string().pattern(/^[a-zA-Z0-9&\- ]{2,100}$/).required()
-            .messages({'string.pattern.base': 'Company name must contain only letters, numbers, spaces, & and -', 'string.empty': 'Company name is required',}),
-       
-        gst_no: Joi.string().regex(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/).required()
-            .messages({'string.pattern.base': 'GST number format is invalid (e.g. 29AAKCD5205D1ZU)', 'string.empty': 'GST number is required', }),
-            
-        contact_name: Joi.string().min(3).max(50).pattern(/^[a-zA-Z0-9&\- ]+$/).required(),
-        whatsapp: Joi.string().pattern(/^[6-9][0-9]{9}$/).required().messages({'string.pattern.base': 'Mobile number must be a 10-digit number starting with 6-9'}),
-        product_name: Joi.string().min(3).max(100).pattern(/^[a-zA-Z0-9&\- ]{2,100}$/).required(),
-        product_price : Joi.number().positive().precision(2).required(),
+        company_name: Joi.string()
+            .pattern(/^[a-zA-Z0-9&\- ]{2,100}$/)
+            .required()
+            .messages({
+                "string.pattern.base":
+                    "Company name must contain only letters, numbers, spaces, & and -",
+                "string.empty": "Company name is required",
+            }),
+
+        gst_no: Joi.string()
+            .regex(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/)
+            .required()
+            .messages({
+                "string.pattern.base": "GST number format is invalid (e.g. 29AAKCD5205D1ZU)",
+                "string.empty": "GST number is required",
+            }),
+
+        contact_name: Joi.string()
+            .min(3)
+            .max(50)
+            .pattern(/^[a-zA-Z0-9&\- ]+$/)
+            .required(),
+        whatsapp: Joi.string()
+            .pattern(/^[6-9][0-9]{9}$/)
+            .required()
+            .messages({
+                "string.pattern.base": "Mobile number must be a 10-digit number starting with 6-9",
+            }),
+        product_name: Joi.string()
+            .min(3)
+            .max(100)
+            .pattern(/^[a-zA-Z0-9&\- ]{2,100}$/)
+            .required(),
+        product_price: Joi.number().positive().precision(2).required(),
     });
 
-    await schema.validateAsync({ company_name, gst_no, contact_name, whatsapp, product_name, product_price }, { abortEarly: false });
- 
+    await schema.validateAsync(
+        {company_name, gst_no, contact_name, whatsapp, product_name, product_price},
+        {abortEarly: false},
+    );
+
     const session = await mongoose.startSession();
     try {
         session.startTransaction();
@@ -42,50 +70,123 @@ export const updateCompanyInfo = asyncHandler ( async( req, resp) => {
         let businessDetails;
         if (user.business_details) {
             if (businessDetails) {
-                businessDetails = await BusinessDetails.findById(user.business_details).session(session);
+                businessDetails = await BusinessDetails.findById(user.business_details).session(
+                    session,
+                );
                 businessDetails.company_name = company_name;
                 businessDetails.gst_number = gst_no;
                 businessDetails.contact_name = contact_name;
                 businessDetails.contact_no = whatsapp;
-                await businessDetails.save({ session });
-            }{
-                businessDetails = await BusinessDetails.create([
-                    {
-                        company_name:company_name,
-                        gst_number:gst_no,
-                        contact_name:gst_no,   
-                        contact_no:whatsapp
-                    }
-                ], { session });
+                await businessDetails.save({session});
+            }
+            {
+                businessDetails = await BusinessDetails.create(
+                    [
+                        {
+                            company_name: company_name,
+                            gst_number: gst_no,
+                            contact_name: gst_no,
+                            contact_no: whatsapp,
+                        },
+                    ],
+                    {session},
+                );
                 user.business_details = businessDetails[0]._id;
-                await user.save({ session });
+                await user.save({session});
             }
         } else {
             // Create new
-            businessDetails = await BusinessDetails.create([
-                {
-                     company_name:company_name,
-                     gst_number:gst_no,
-                     contact_name:gst_no,   
-                     contact_no:whatsapp
-                }
-            ], { session });
+            businessDetails = await BusinessDetails.create(
+                [
+                    {
+                        company_name: company_name,
+                        gst_number: gst_no,
+                        contact_name: gst_no,
+                        contact_no: whatsapp,
+                    },
+                ],
+                {session},
+            );
+            user.business_details = businessDetails[0]._id;
+            await user.save({session});
+        }
+
+        const slug = slugify(product_name, {lower: true}) + "-" + Date.now();
+
+        const productData = {
+            name: product_name,
+            seller_id: loggedUser,
+            slug: slug,
+            price: product_price,
+        };
+        const newProduct = new Product(productData);
+        await newProduct.save();
+
+        await session.commitTransaction();
+        session.endSession();
+
+        const updatedUser = await User.findById(loggedUser)
+            .select("-otp -otpExpires -refreshToken -__v -createdAt -updatedAt")
+            .populate({
+                path: "business_details",
+                select: "-_id -createdAt -updatedAt",
+            });
+
+        return resp
+            .status(200)
+            .json(new ApiResponse(200, updatedUser, "Company information updated successfully."));
+    } catch (error) {
+        await session.abortTransaction();
+        session.endSession();
+        throw error;
+    }
+});
+
+export const updateContactPerson = asyncHandler(async (req, resp) => {
+    const {company_name, gst_no} = req.body;
+    const loggedUser = req.user._id;
+
+    
+    const schema = Joi.object({
+        company_name: Joi.string()
+            .regex(/^[a-zA-Z0-9&\- ]{2,100}$/)
+            .required()
+            .messages({
+                "string.pattern.base":
+                    "Company name must contain only letters, numbers, spaces, & and -",
+                "string.empty": "Company name is required",
+            }),
+
+        gst_no: Joi.string()
+            .regex(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/)
+            .required()
+            .messages({
+                "string.pattern.base": "GST number format is invalid (e.g. 29AAKCD5205D1ZU)",
+                "string.empty": "GST number is required",
+            }),
+    });
+    await schema.validateAsync({ company_name, gst_no }, { abortEarly: false });
+ 
+    const session = await mongoose.startSession();
+     try {
+        session.startTransaction();
+
+        const user = await User.findById(loggedUser).session(session);
+        let businessDetails;
+
+        if (user.business_details) {
+            // Update existing
+            businessDetails = await BusinessDetails.findById(user.business_details).session(session);
+            businessDetails.company_name = company_name;
+            businessDetails.gst_number = gst_no;
+            await businessDetails.save({ session });
+        } else {
+            // Create new
+            businessDetails = await BusinessDetails.create([{ company_name:company_name, gst_number:gst_no,}], { session });
             user.business_details = businessDetails[0]._id;
             await user.save({ session });
         }
         
-        const slug = slugify(product_name, { lower: true }) + "-" + Date.now();
-
-        const productData = {
-            name: product_name,
-            seller_id : loggedUser,
-            slug : slug,
-            price : product_price,
-        };
-        const newProduct = new Product(productData);
-        await newProduct.save();
-    
-
         await session.commitTransaction();
         session.endSession();
 
@@ -103,58 +204,7 @@ export const updateCompanyInfo = asyncHandler ( async( req, resp) => {
         throw error;
     }
 
-
 })
-
-
-export const updateContactPerson = asyncHandler ( async( req, resp)=>{
-    const { company_name, gst_no } = req.body;    
-    const loggedUser = req.user._id;
-    
-    const schema = Joi.object({
-        company_name: Joi.string()
-            .regex(/^[a-zA-Z0-9&\- ]{2,100}$/)
-            .required()
-            .messages({
-                'string.pattern.base': 'Company name must contain only letters, numbers, spaces, & and -',
-                'string.empty': 'Company name is required',
-            }),
-
-        gst_no: Joi.string()
-            .regex(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/)
-            .required()
-            .messages({
-                'string.pattern.base': 'GST number format is invalid (e.g. 29AAKCD5205D1ZU)',
-                'string.empty': 'GST number is required',
-            }),
-    });
-    await schema.validateAsync({ company_name, gst_no }, { abortEarly: false });
- 
-    const user = await User.findById(loggedUser);
-    let businessDetails;
-
-    if (user.business_details) {
-        businessDetails = await BusinessDetails.findById(user.business_details);
-        businessDetails.company_name = company_name;
-        businessDetails.gst_number = gst_no;
-        await businessDetails.save({ session });
-    } else {
-        // Create new
-        businessDetails = await BusinessDetails.create([{ company_name:company_name, gst_number:gst_no,}], { session });
-        user.business_details = businessDetails[0]._id;
-        await user.save({ session });
-    }
-    
-    const updatedUser  = await User.findById(loggedUser).select("-otp -otpExpires -refreshToken -__v -createdAt -updatedAt")
-                        .populate({
-                            path: 'business_details',
-                            select: '-_id -createdAt -updatedAt' 
-                        });
-
-    return resp.status(200).json( new ApiResponse(200, updatedUser , "Company information updated successfully.") );
-
-})
-
 
 
 
@@ -162,17 +212,14 @@ export const updateContactPerson = asyncHandler ( async( req, resp)=>{
 // Seller Contacts Apis 
 export const getAllContacts = asyncHandler(async (req, res) => {
     const loggedUser = req.user._id;
-    const contacts = await UserContacts.find({  user_id : loggedUser })
-                        .populate('division', 'name id')
-                        .select('-deleted -createdAt -updatedAt')
-                        .sort({ sr_no: 1 }); 
+    const contacts = await UserContacts.find({  user_id : loggedUser }).sort({ sr_no: 1 }); 
     return res.status(200).json( new ApiResponse( 200, contacts , "Contact fetched successfully") );
 });
 
 
 export const getContactById = asyncHandler(async (req, res) => { 
     const {id} = req.params;
-    const contacts = await UserContacts.findById(id).populate('division', 'name id').select("-createdAt -updatedAt");
+    const contacts = await UserContacts.findById(id).select("-deleted");
     if (!contacts) {
         return res.status(400).json(new ApiError(400, null, "Contact not found"));
     }
@@ -180,9 +227,12 @@ export const getContactById = asyncHandler(async (req, res) => {
 });
 
 
+
+
 export const createContact = asyncHandler(async (req, res) => {
     const { division, contact_person, address, mobile_no, landline_no, toll_free_no, email, fax_no } = req.body;
-    const loggedUser = req.user.id;
+
+    const loggedUser = req.user._id;
     
     const schema = Joi.object({
       division: Joi.string().min(3).max(100).required().messages({ "string.empty": "Division is required", "string.min": "Division must be at least 3 characters",}),  
@@ -205,29 +255,37 @@ export const createContact = asyncHandler(async (req, res) => {
     });
   
     await schema.validateAsync(req.body, { abortEarly: false });
-
-    const isExist = await UserContacts.findOne({ user_id:loggedUser, division:division  });
-    if(isExist){
-        return res.status(400).json(new ApiError(400, null, "Contact already exist on this division"));
+  
+    const session = await mongoose.startSession();
+    session.startTransaction();  
+    try {
+      const lastContact = await UserContacts.findOne({ user_id:loggedUser }).sort({ sr_no: -1 });
+      const sr_no = lastContact ? lastContact.sr_no + 1 : 1;
+  
+      const contact = await UserContacts.create({ user_id:loggedUser,  division, contact_person,  address,  mobile_no,  landline_no, toll_free_no,  email,fax_no, sr_no, });
+  
+      await session.commitTransaction();
+      session.endSession();
+  
+      return res.status(201).json(new ApiResponse(201, contact , "Contact added successfully"));
+    } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(500).json(new ApiResponse(500, "Something went wrong", error.message));
     }
-
-    const lastContact = await UserContacts.findOne({ user_id:loggedUser  }).sort({ sr_no: -1 });
-    const sr_no = lastContact ? lastContact.sr_no + 1 : 1;
-
-    const contact = await UserContacts.create({ user_id:loggedUser,  division, contact_person,  address,  mobile_no,  landline_no, toll_free_no,  email,fax_no, sr_no, });
-
-    const populateContact = await UserContacts.findById(contact.id).populate('division', 'name id').select("-createdAt -updatedAt");
-    return res.status(201).json(new ApiResponse(201, populateContact , "Contact added successfully"));
+    
 });
 
 
+
+
 export const updateContact = asyncHandler(async (req, res) => {
-    const loggedUser = req.user.id;    
+    const loggedUser = req.user._id;
     const { id } = req.params;
 
     // Joi schema for partial update (PATCH)
     const schema = Joi.object({
-        division: Joi.string(),
+        division: Joi.string().min(3).max(100).optional(),
         contact_person: Joi.string().min(3).max(100).optional(),
         address: Joi.object({
             address_line: Joi.string().min(5).max(200).optional(),
@@ -247,56 +305,57 @@ export const updateContact = asyncHandler(async (req, res) => {
 
     await schema.validateAsync(req.body, { abortEarly: false });
 
+    try {
+            // Find and update contact
+            const updatedContact = await UserContacts.findOneAndUpdate(
+            { _id: id, user_id: loggedUser }, 
+            { $set: req.body },
+            { new: true, runValidators: true }
+            );
 
-     const existingContact = await UserContacts.findOne({
-            user_id: loggedUser, division: req.body.division, _id: { $ne: id },
-    });
-    if (existingContact) {
-        return res.status(400).json(new ApiResponse(400, null, "Contact already exists for this division"));
+            if (!updatedContact) {
+                return res.status(404).json(new ApiResponse(404, null, "Contact not found"));
+            }
+
+            return res.status(200).json(new ApiResponse(200, updatedContact, "Contact updated successfully"));
+    } catch (error) {
+        return res.status(500).json(new ApiResponse(500, null, error.message));
     }
 
-    const updatedContact = await UserContacts.findOneAndUpdate(
-            { _id: id, user_id: loggedUser },  { $set: req.body }, { new: true, runValidators: true }
-    );
-
-    if (!updatedContact) {
-        return res.status(404).json(new ApiResponse(404, null, "Contact not found"));
-    }
-    const populateContact = await UserContacts.findById(updatedContact.id).populate('division', 'name id').select("-createdAt -updatedAt");
-    return res.status(200).json(new ApiResponse(200, populateContact, "Contact updated successfully"));
-   
 });
-
-
 
 export const deleteContact = asyncHandler(async (req, res) => {
     const { id } = req.params;
-    const loggedUser = req.user.id;
+    const loggedUser = req.user._id;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json(new ApiResponse(400, null, "Invalid contact id"));
     }
 
-    const contact = await UserContacts.findOneAndDelete({ _id: id, user_id: loggedUser });
-    if (!contact) { return res.status(404).json(new ApiResponse(404, null, "Contact not found")) }
+    const contact = await UserContacts.findOneAndDelete({
+        _id: id,
+        user_id: loggedUser, 
+    });
+
+    if (!contact) {
+        return res.status(404).json(new ApiResponse(404, null, "Contact not found"));
+    }
 
     return res.status(200).json(new ApiResponse(200, contact, "Contact deleted successfully"));
-
 });
 
 
 export const reorderContacts = asyncHandler( async ( req, res) =>{
-    const { contacts }  = req.body
-    if (!Array.isArray(contacts)) {
-            return res.status(400).json(new ApiResponse(400, null, "Invalid contacts payload"));
+    const { testimonials }  = req.body
+    if (!Array.isArray(testimonials)) {
+            return res.status(400).json(new ApiResponse(400, null, "Invalid testimonials payload"));
     }
-    for (const cat of contacts) {        
+    for (const cat of testimonials) {        
         if (!cat.id || typeof cat.sr_no !== 'number') continue;
-        await UserContacts.findByIdAndUpdate(cat.id, { sr_no: cat.sr_no});
+        await Testimonials.findByIdAndUpdate(cat.id, { sr_no: cat.sr_no});
     }
 
-    const newContacts = await UserContacts.find().sort({ sr_no: 1 });
-    return res.status(200).json(new ApiResponse(200, newContacts, "Contacts numbers updated"));
+    const newTestimonials = await Testimonials.find({ deleted: { $ne:true } }).sort({ sr_no: 1 });
+    return res.status(200).json(new ApiResponse(200, newTestimonials, "Sr numbers updated"));
 
-})
-
+});
