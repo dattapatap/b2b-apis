@@ -12,21 +12,8 @@ const pincodeSchema = new Schema(
             type: String,
             required: true
         },
-<<<<<<< HEAD
-        city: {
-            type:mongoose.Schema.Types.ObjectId,
-            ref: "Cities", 
-            required: true
-        },
-        state: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "States",
-            required: true
-        },
-=======
         city: { type: mongoose.Schema.Types.ObjectId, ref: "Cities", required: true },
         state: { type: mongoose.Schema.Types.ObjectId, ref: "States", required: true },
->>>>>>> development
         status: {
             type: String,
             enum: ["active", "inactive"],
