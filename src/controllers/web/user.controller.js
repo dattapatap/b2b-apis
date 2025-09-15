@@ -67,9 +67,9 @@ export const sendOtp = asyncHandler(async (req, res) => {
     await session.commitTransaction();
     session.endSession();
 
-    return res.json(new ApiResponse(200, { OTP: otp }, "OTP Sent Successfully"));
-    
+    return res.json(new ApiResponse(200, { OTP: otp }, "OTP Sent Successfully")); 
 });
+
 
 
 // Verify OTP
@@ -111,6 +111,7 @@ export const verifyOtp = asyncHandler(async (req, res) => {
                         "User logged In Successfully",
                     ),
                 );
+            
 });
 
 
