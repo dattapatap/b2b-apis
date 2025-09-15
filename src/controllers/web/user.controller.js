@@ -48,24 +48,13 @@ export const sendOtp = asyncHandler(async (req, res) => {
     
     const loginSchema = Joi.object({
         mobile: Joi.string().required().min(10).max(10),
-        role: Joi.string().required().insensitive().valid("buyer", "seller"),
     });
-
-    await loginSchema.validateAsync({ mobile, role }, { abortEarly: false });
-
-    let roleId = await Roles.findOne({ role_name: role });
-    if (!roleId) throw new ApiError(400, "Invalid role");
+    await loginSchema.validateAsync({ mobile }, { abortEarly: false });
 
     let currUser = await User.findOne({ mobile }).session(session);
     if (!currUser) {
         currUser = await User.create([{ mobile }], { session });
         currUser = currUser[0];
-    }
-
-    const existingUserRole = await Roles.findOne({ role_id: roleId._id, user_id: currUser._id }).session(session);
-    if (!existingUserRole) {
-        const userRole = await Roles.create([{ role_id: roleId._id, assignedAt: dayjs().tz().toDate(), user_id: currUser._id }], { session });
-        currUser.roles.push(userRole[0]._id);
     }
 
     const otp = generateOTP();
@@ -85,14 +74,13 @@ export const sendOtp = asyncHandler(async (req, res) => {
 
 // Verify OTP
 export const verifyOtp = asyncHandler(async (req, res) => {
-    const {mobile, otp, role } = req.body;
+    const {mobile, otp } = req.body;
 
     const loginSchema = Joi.object({
         mobile: Joi.string().required().min(10).max(10),
-        role: Joi.string().required().insensitive().valid("buyer", "seller"),
         otp: Joi.string().required().min(6).max(6),
     });        
-    await loginSchema.validateAsync({  mobile, role, otp },{ abortEarly: false });
+    await loginSchema.validateAsync({  mobile,  otp },{ abortEarly: false });
 
     let currUser = await User.findOne({mobile: mobile});
 
@@ -106,19 +94,6 @@ export const verifyOtp = asyncHandler(async (req, res) => {
 
     if (currUser.otp !== otp) {
         throw new ApiError(400,  "Invalid OTP");
-    }
-
-    const roleDoc = await Roles.findOne({ role_name: role });
-    if (!roleDoc) {
-        throw new ApiError(400,  "Invalid role");
-    }
-
-    // check if user already has the role
-    const existingUserRole = await Roles.findOne({ role_id: roleDoc._id, user_id: currUser._id,});
-    if (!existingUserRole) {
-        const userRole = await Roles.create({ role_id: roleDoc._id, assignedAt: dayjs().tz().toDate(), user_id: currUser._id, });
-        currUser.roles.push(userRole._id); 
-        await currUser.save();
     }
 
     const {accessToken, refreshToken} = await generateAccessAndRefereshTokens(currUser._id, "web");

@@ -1,74 +1,51 @@
-import mongoose, {Schema} from "mongoose";
+import mongoose from "mongoose";
+import MongooseDelete from "mongoose-delete";
 
-const BusinessDetailsSchema = new Schema(
-    {
-        company_name: {type: String, required: true},
-        company_logo_url: {type: String, required: false},
-
-        contact_name: { type: String, required: false},
-        contact_no: { type: String, required: false},
-        location : { type: Schema.Types.ObjectId, ref: 'Cities'},
-
-        company_type: {
-            type: String,
-            enum: ["Proprietorship", "Pvt Ltd", "Partnership", "LLP", "Other"],
-        },
-        business_category: {type: String, required: false},
-        established_year: {type: Number, required: false},
-        gst_number: {type: String, required: false},
-        pan_number: {type: String, required: false},
-        udyam_registration_number: {type: String, required: false},
-        cin_number: {type: String, required: false},
-        fssai_number: {type: String, required: false},
-        business_license_url: {type: String, required: false},
-        description: {type: String, required: false},
-        business_tagline: {type: String, required: false},
-        working_hours: {
-            start_time: {type: String, required: false},
-            end_time: {type: String, required: false},
-            working_days: [
-                {
-                    type: String,
-                    required: false,
-                    enum: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-                },
-            ],
-        },
-
+const businessDetailsSchema = new mongoose.Schema(
+  {
+        user_id: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+        gstin: {
+      type: String,
+      required: true,
+      match: /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/, // GST format
+      trim: true,
+      unique: true,
     },
-    {
-        timestamps: true,
-        versionKey: false
+    pan: {
+      type: String,
+      required: true,
+      match: /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/, // PAN format
+      trim: true,
+      unique: true,
     },
+    udyam_number: {
+      type: String,
+      trim: true,
+      match: /^UDYAM-[A-Z]{2}-\d{2}-\d{7}$/, // e.g. UDYAM-XX-00-0000000
+    },
+    aadhaar_number: {
+      type: String,
+      trim: true,
+      match: /^\d{12}$/, // 12 digits
+    },
+    cin_llpin: {
+      type: String,
+      trim: true,
+      match: /^[A-Z0-9]{21}$/, // CIN/LLPIN typical length
+    },
+    iec: {
+      type: String,
+      trim: true,
+      match: /^[A-Z0-9]{10}$/, // IEC is 10 characters
+    },
+    tan: {
+      type: String,
+      trim: true,
+      match: /^[A-Z]{4}[0-9]{5}[A-Z]{1}$/, // TAN format
+    },
+  },
+  { timestamps: true }
 );
 
-BusinessDetailsSchema.pre("save", function (next) {
-    if (this.company_name) {
-        this.company_name = this.company_name.toUpperCase();
-    }
-    next();
-});
-
-BusinessDetailsSchema.pre("findOneAndUpdate", function (next) {
-    const update = this.getUpdate();
-    if (update.company_name) {
-        update.company_name = update.company_name.toUpperCase();
-        this.setUpdate(update);
-    }
-    next();
-});
-
-
-
-BusinessDetailsSchema.set('toJSON', {
-  transform: function (doc, ret) {
-    delete ret.__v;
-    ret.id = ret._id;  
-    delete ret._id; 
-    return ret;
-  }
-});
-
-
-
-export const BusinessDetails = mongoose.model("BusinessDetails", BusinessDetailsSchema);
+businessDetailsSchema.plugin(MongooseDelete, { deleted: true, overrideMethods: 'all' });
+export const BusinessDetails = mongoose.model( "BusinessDetails", businessDetailsSchema);

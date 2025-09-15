@@ -1,9 +1,9 @@
 import mongoose, {Schema} from "mongoose";
 import MongooseDelete from "mongoose-delete";
 
-const personalDetailsSchema = new Schema(
+const companyInfoSchema = new Schema(
     {
-        user_id: { type: Schema.Types.ObjectId, ref: "User", required: true },
+        user: {type: Schema.Types.ObjectId, ref: "User", required: true},
         company_name: {type: String},
         contact_person: {type: String},
         designation: {type: String},
@@ -28,13 +28,21 @@ const personalDetailsSchema = new Schema(
         google_business_url: {type: String},
         facebook_url: {type: String},
         map_url: {type: String},
-        
         company_logo: {type: String},
-
-
     },
     {timestamps: true},
 );
 
-personalDetailsSchema.plugin(MongooseDelete, { deleted: true, overrideMethods: 'all' });
-export const UserPersonalDetails = mongoose.model("UserPersonalDetails", personalDetailsSchema);
+personalDetailsSchema.set("toJSON", {
+  virtuals: true,
+  transform: function (doc, ret) {
+    delete ret.__v;
+    ret.id = ret._id;
+    delete ret._id;
+    return ret;
+  },
+});
+
+companyInfoSchema.plugin(MongooseDelete, { deleted: true, overrideMethods: 'all' });
+
+export const CompanyInformation = mongoose.model("CompanyInformation", companyInfoSchema);

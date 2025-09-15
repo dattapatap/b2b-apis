@@ -12,11 +12,38 @@ import * as categoriesController from "../../controllers/web/categories.controll
 import * as subcategoriesController from "../../controllers/web/subcategories.controller.js";
 import * as collectionController from "../../controllers/web/collection.controller.js";
 import * as brandsController from "../../controllers/web/brands.controller.js";
+import * as BuyerController from "../../controllers/web/buyer/personalinformation.controller.js";
+import * as CompanyInfoController from "../../controllers/web/buyer/personalinformation.controller.js";  
+import * as BuyerBankDetailsController from "../../controllers/web/buyer/personalinformation.controller.js";
 
+import * as AddressController from "../../controllers/web/buyer/personalinformation.controller.js";
 import * as productController from "../../controllers/web/seller/product.controller.js";
 
 
 const router = Router();
+
+
+// Public routes
+router.post("/login", userController.sendOtp);
+router.post("/verify-otp", userController.verifyOtp);
+
+
+const adminAuthMiddleware = [verifyJWT, requireRole(["buyer", "seller"])];
+router.use(adminAuthMiddleware);
+
+router.route("/refresh-token").post( userController.refreshAccessToken);
+router.route("/user").get(userController.getCurrentUser);
+router.route("/logout").post(  userController.logoutUser);
+
+
+// Product APIs
+router.route("/buyer/product/create").post( productController.createProduct);
+router.route("/buyer/product/add-categories").post( productController.addCategoriesToProduct);
+router.route("/buyer/product/add-product-catlog").post( upload.single("product_catlog"),  productController.addProductCatlog);
+router.route("/buyer/product/add-product-media").post( upload.single("product_media"),  productController.addMedia);
+router.route("/buyer/product/add-video").post( productController.addVideoUrl);
+
+
 
 
 router.get("/cities",  citiesController.getAllCities);
@@ -39,25 +66,19 @@ router.get("/brands",  brandsController.getAllBrands);
 router.get("/brand/:id", brandsController.getBrandById);
 
 
-// Public routes
-router.post("/login", userController.sendOtp);
-router.post("/verify-otp", userController.verifyOtp);
+// //Buyer personal information
+// router.route("/buyer/personal-info").put(BuyerController.upsertPersonalDetails);
+
+// //company info  
+// router.route("/buyer/company-info").put( CompanyInfoController.updateCompanyInformation);
 
 
-const adminAuthMiddleware = [verifyJWT, requireRole(["buyer", "seller"])];
-router.use(adminAuthMiddleware);
+// // Buyer Bank Details
+// router.route("/buyer/bankdetails").put( BuyerBankDetailsController.upsertUserBankDetails);    
 
-router.route("/refresh-token").post( userController.refreshAccessToken);
+// //Buyer Address
+// router.route("/buyer/address-info").put(AddressController.upsertUserAddress);
 
-router.route("/user").get(userController.getCurrentUser);
-router.route("/logout").post(  userController.logoutUser);
-
-// Product APIs
-router.route("/buyer/product/create").post( productController.createProduct);
-router.route("/buyer/product/add-categories").post( productController.addCategoriesToProduct);
-router.route("/buyer/product/add-product-catlog").post( upload.single("product_catlog"),  productController.addProductCatlog);
-router.route("/buyer/product/add-product-media").post( upload.single("product_media"),  productController.addMedia);
-router.route("/buyer/product/add-video").post( productController.addVideoUrl);
 
 
 export default router;

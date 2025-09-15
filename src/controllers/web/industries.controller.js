@@ -4,8 +4,7 @@ import {ApiResponse} from "../../utils/ApiResponse.js";
 
 import {Industries} from "../../models/industries.modal.js";
 import mongoose from "mongoose";
-
-
+import MongooseDelete from "mongoose-delete";
 
 export const getAllIndustry = asyncHandler(async (req, res) => {
     const page = parseInt(req.query.page) || 1;
@@ -13,10 +12,12 @@ export const getAllIndustry = asyncHandler(async (req, res) => {
     const skip = (page - 1) * limit;
 
     const industry = await Industries.find({isDeleted: false})
-        .skip(skip).limit(limit).select("-isDeleted -createdAt -updatedAt -__v");
+        .skip(skip)
+        .limit(limit)
+        .select("-isDeleted -createdAt -updatedAt -__v");
     console.log(industry);
 
-    const totalIndustry = await Industries.find({isDeleted: false}).countDocuments();
+    const totalIndustry = await Industries.find({deleted: {$ne:true}}).countDocuments();
     const totalPages = Math.ceil(totalIndustry / limit);
 
     return res.status(200).json(
@@ -36,20 +37,19 @@ export const getAllIndustry = asyncHandler(async (req, res) => {
     );
 });
 
-
 // Get a Industry by ID
 export const getIndustryDetails = asyncHandler(async (req, res) => {
-    const { slug } = req.params;
+    const {slug} = req.params;
 
-    const industry = await Industries.findOne({"slug" : slug })
+    const industry = await Industries.findOne({slug: slug})
         .populate({
             path: "categories",
-            match: { isDeleted: false },
-            select: "-__v -isDeleted -createdAt -updatedAt", 
+            match: {isDeleted: false},
+            select: "-__v -isDeleted -createdAt -updatedAt",
             populate: {
                 path: "subcategories",
-                match: { isDeleted: false },
-                select: "-__v -isDeleted -createdAt -updatedAt", 
+                match: {isDeleted: false},
+                select: "-__v -isDeleted -createdAt -updatedAt",
             },
         })
         .select("-isDeleted -createdAt -updatedAt -__v");
@@ -57,41 +57,41 @@ export const getIndustryDetails = asyncHandler(async (req, res) => {
     if (!industry) {
         throw new ApiError(404, "Industry not found");
     }
-    
-    return res.status(200).json(new ApiResponse(200, industry, "Industry detail fetched successfully"));
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, industry, "Industry detail fetched successfully"));
 });
-
-
 
 export const getAllIndustryWithCollections = asyncHandler(async (req, res) => {
     const {id} = req.params;
-    try{
-        const  [industry] = await Industries.aggregate([
-            { $match: { _id: new mongoose.Types.ObjectId(id), isDeleted: false } }, 
+    try {
+        const [industry] = await Industries.aggregate([
+            {$match: {_id: new mongoose.Types.ObjectId(id), deleted: {$ne:true}}},
             {
                 $lookup: {
                     from: "collections",
-                    localField: "_id", 
+                    localField: "_id",
                     foreignField: "industry",
                     as: "collections",
                 },
-            },   
+            },
             {
                 $addFields: {
                     collections: {
                         $filter: {
                             input: "$collections",
                             as: "collection",
-                            cond: { $eq: ["$$collection.isDeleted", false] },
+                            cond: {$eq: ["$$collection.isDeleted", false]},
                         },
                     },
                 },
             },
             {
                 $lookup: {
-                    from: "subcategories", 
-                    localField: "collections.subcategory", 
-                    foreignField: "_id", 
+                    from: "subcategories",
+                    localField: "collections.subcategory",
+                    foreignField: "_id",
                     as: "subcategoryDetails",
                 },
             },
@@ -106,7 +106,7 @@ export const getAllIndustryWithCollections = asyncHandler(async (req, res) => {
                                 name: "$$collection.name",
                                 image: "$$collection.image",
                                 slug: "$$collection.slug",
-                                heading: "$$collection.heading",                            
+                                heading: "$$collection.heading",
                             },
                         },
                     },
@@ -117,18 +117,20 @@ export const getAllIndustryWithCollections = asyncHandler(async (req, res) => {
                     _id: 1,
                     name: 1,
                     slug: 1,
-                    heading:1,
+                    heading: 1,
                     collections: 1,
                 },
             },
-            { $limit: 1 },
+            {$limit: 1},
         ]);
         if (!industry) {
             throw new ApiError(404, "Industry not found");
-        }   
-    
-        return res.status(200).json(new ApiResponse(200, industry, "Industry Details fetched successfully"));
-    }catch(error){
+        }
+
+        return res
+            .status(200)
+            .json(new ApiResponse(200, industry, "Industry Details fetched successfully"));
+    } catch (error) {
         console.log(error);
     }
 });

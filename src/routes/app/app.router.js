@@ -27,6 +27,7 @@ import * as sucategoriesController from "../../controllers/app/seller/subcategor
 import * as divisionController from "../../controllers/app/division.controller.js";
 import * as pincodeController from "../../controllers/app/pincode.controller.js";
 import * as countriesController from "../../controllers/app/countries.controller.js";
+import * as personalDetailsController from "../../controllers/app/seller/profile.controller.js";
 
 
 const router = Router();
@@ -81,7 +82,10 @@ sellerRouter.route("/profile/contacts/:id").get(contactsController.getContactByI
 sellerRouter.route("/profile/contacts/reorder").patch(contactsController.reorderContacts);
 
 sellerRouter.post("/profile/update-bank-info", profileController.updateBankDetails);
+// sellerRouter.post("/profile/update-bank-info", profileController.updateCompanyInfo);
+
 sellerRouter.post("/profile/update-bussiness-card", upload.fields([{ name: "front_view" }, { name: "back_view" }]) , profileController.updateBusinessCard);
+sellerRouter.route("/user-profile").get(profileController.getUserProfile)
 
 
 
@@ -113,8 +117,17 @@ sellerRouter.get("/product-types", productTypeController.getAllProductTypes);
 sellerRouter.get("/product-industries", industriesSellerController.getAllIndustry);
 sellerRouter.get("/product-categories/:industry", categoriesSellerController.getCategoryByIndustryId);
 sellerRouter.get("/product-sub-categories/:category", sucategoriesController.getAllSubsByCategoryId);
-sellerRouter.get("/product-specifications/:productId", productSpecificationController.getProductSpecifications);
+sellerRouter.get("/product-specifications/:prdoductId", productSpecificationController.getProductSpecifications);
 sellerRouter.get("/product-additional-details/:productId", productSpecificationController.getProductAdditionalDetails);
+
+
+//personal Details
+router.route("/seller/personal_details").put(personalDetailsController.upsertPersonalDetails);
+router.route("/seller/business_details").put(profileController.upsertBusinessDetails);
+
+
+
+
 
 // Mount seller routes under /seller prefix
 router.use("/seller", sellerRouter);
