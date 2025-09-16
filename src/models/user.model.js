@@ -42,7 +42,7 @@ userSchema.virtual("contacts", {
   ref: "UserContacts",
   localField: "_id",
   foreignField: "user_id",
-  justOne: true,
+  justOne: false
 });
 
 userSchema.virtual("business_card", {

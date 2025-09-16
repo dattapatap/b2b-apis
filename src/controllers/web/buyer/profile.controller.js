@@ -83,6 +83,7 @@ export const upsertPersonalDetails = asyncHandler(async (req, res) => {
 });
 
 
+
 export const upsertUserBankDetails = asyncHandler(async (req, res) => {
   const userId = req.user_id;
      const {account_no, account_holder, ifsc_code, branch_name, bank_name} = req.body;
