@@ -330,7 +330,7 @@ export const upsertBusinessDetails = asyncHandler(async (req, res) => {
 });
 
 export const updateBusinessCard = asyncHandler(async (req, res) => {
-    const userId = req.user_id.id;
+    const userId = req.user.id;
 
     if (!req.files || !req.files.front_view || !req.files.back_view) {
         throw new ApiError(400, "Both front_view and back_view files are required");
@@ -387,7 +387,7 @@ export const updateBusinessCard = asyncHandler(async (req, res) => {
 
 // Update Bank Details
 export const updateBankDetails = asyncHandler(async (req, res) => {
-    const userId = req.user_id.id;
+    const userId = req.user.id;
     const {account_no, account_holder, ifsc_code, branch_name, bank_name} = req.body;
 
     const BankDetailsSchema = Joi.object({
