@@ -329,7 +329,6 @@ export const upsertBusinessDetails = asyncHandler(async (req, res) => {
   }
 });
 
-// Update Bank Details
 export const updateBusinessCard = asyncHandler(async (req, res) => {
     const userId = req.user_id.id;
 
@@ -454,10 +453,8 @@ export const upsertPersonalDetails = asyncHandler(async (req, res) => {
   }
 
   try {
-    // Validate input
     await PersonalDetailsSchema.validateAsync(req.body, { abortEarly: false });
 
-    // Update if exists, else create
     const personal = await UserPersonalDetails.findOneAndUpdate(
       { user_id: userId, deleted: { $ne: true } },
       { user_id: userId, ...req.body },

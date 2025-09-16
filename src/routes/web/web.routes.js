@@ -12,11 +12,7 @@ import * as categoriesController from "../../controllers/web/categories.controll
 import * as subcategoriesController from "../../controllers/web/subcategories.controller.js";
 import * as collectionController from "../../controllers/web/collection.controller.js";
 import * as brandsController from "../../controllers/web/brands.controller.js";
-import * as BuyerController from "../../controllers/web/buyer/personalinformation.controller.js";
-import * as CompanyInfoController from "../../controllers/web/buyer/personalinformation.controller.js";  
-import * as BuyerBankDetailsController from "../../controllers/web/buyer/personalinformation.controller.js";
-
-import * as AddressController from "../../controllers/web/buyer/personalinformation.controller.js";
+import * as ProfileController from "../../controllers/web/buyer/profile.controller.js";
 import * as productController from "../../controllers/web/seller/product.controller.js";
 
 
@@ -66,18 +62,18 @@ router.get("/brands",  brandsController.getAllBrands);
 router.get("/brand/:id", brandsController.getBrandById);
 
 
-// //Buyer personal information
-// router.route("/buyer/personal-info").put(BuyerController.upsertPersonalDetails);
+//Buyer personal information
+router.route("/buyer/personal-info").put(ProfileController.upsertPersonalDetails);
 
-// //company info  
-// router.route("/buyer/company-info").put( CompanyInfoController.updateCompanyInformation);
+//company info  
+router.route("/buyer/company-info").put( ProfileController.updateCompanyInformation);
 
 
-// // Buyer Bank Details
-// router.route("/buyer/bankdetails").put( BuyerBankDetailsController.upsertUserBankDetails);    
+// Buyer Bank Details
+router.route("/buyer/bankdetails").put( ProfileController.upsertUserBankDetails);    
 
-// //Buyer Address
-// router.route("/buyer/address-info").put(AddressController.upsertUserAddress);
+//Buyer Address
+router.route("/buyer/address-info").put(ProfileController.upsertUserAddress);
 
 
 

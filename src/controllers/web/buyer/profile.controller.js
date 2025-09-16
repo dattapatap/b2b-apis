@@ -3,46 +3,14 @@ import { asyncHandler } from "../../../utils/asyncHandler.js";
 import { ApiError } from "../../../utils/ApiError.js";
 import { ApiResponse } from "../../../utils/ApiResponse.js";
 import { UserPersonalDetails } from "../../../models/userPersonalDetails.model.js";
-import { UserBankDetails } from "../../../models/userBankDetails.model.js";
+import { UserBankDetails } from "../../../models/userBank.model.js";
 import {CompanyInformation} from "../../../models/companyInformation.model.js";
 import { userAddress } from "../../../models/userAddress.model.js";
-
-
-
-
-// Joi schema with ALL fields required
-const PersonalDetailsSchema = Joi.object({
-  company_name: Joi.string().min(2).max(100).required(),
-  contact_person: Joi.string().min(2).max(100).required(),
-  designation: Joi.string().min(2).max(100).required(),
-
-  primary_mobile: Joi.string().pattern(/^[0-9]{10}$/).required(),
-  primary_email: Joi.string().email().required(),
-
-  alt_mobile: Joi.string().pattern(/^[0-9]{10}$/),
-  landline_no: Joi.string().optional(),
-
-  pincode: Joi.string().optional(),
-  city: Joi.string().optional(),
-  district: Joi.string().optional(),
-  state: Joi.string().optional(),
-  country: Joi.string().optional(),
-  floor: Joi.string().optional(),
-  area_street: Joi.string().optional(),
-  locality: Joi.string().optional(),
-  landmark: Joi.string().optional(),
-
-  catalog_url: Joi.string().uri(),
-  website_url: Joi.string().uri().optional(),
-  google_business_url: Joi.string().uri().optional(),
-  facebook_url: Joi.string().uri().optional(),
-  map_url: Joi.string().uri().optional(),
-  company_logo: Joi.string().optional(),
-});
+import { User } from "../../../models/user.model.js";
 
 
 export const upsertPersonalDetails = asyncHandler(async (req, res) => {
-  const userId = req.user?._id; // from auth middleware
+  const userId = req.user?._id;   
 
   if (!userId) {
     return res
@@ -50,15 +18,51 @@ export const upsertPersonalDetails = asyncHandler(async (req, res) => {
       .json(new ApiResponse(401, null, "Unauthorized: user not logged in"));
   }
 
+  const existingUser = await User.findById(userId);
+  if (!existingUser) {
+    return res
+      .status(404)
+      .json(new ApiResponse(404, null, "User not found"));
+  }
+
+  const PersonalDetailsSchema = Joi.object({
+    company_name: Joi.string().min(2).max(100).required(),
+    contact_person: Joi.string().min(2).max(100).required(),
+    designation: Joi.string().min(2).max(100).required(),
+
+    primary_mobile: Joi.string().pattern(/^[0-9]{10}$/).required(),
+    primary_email: Joi.string().email().required(),
+
+    alt_mobile: Joi.string().pattern(/^[0-9]{10}$/).optional(),
+    landline_no: Joi.string().optional(),
+
+    pincode: Joi.string().optional(),
+    city: Joi.string().optional(),
+    district: Joi.string().optional(),
+    state: Joi.string().optional(),
+    country: Joi.string().optional(),
+    floor: Joi.string().optional(),
+    area_street: Joi.string().optional(),
+    locality: Joi.string().optional(),
+    landmark: Joi.string().optional(),
+
+    catalog_url: Joi.string().uri().optional(),
+    website_url: Joi.string().uri().optional(),
+    google_business_url: Joi.string().uri().optional(),
+    facebook_url: Joi.string().uri().optional(),
+    map_url: Joi.string().uri().optional(),
+    company_logo: Joi.string().optional(),
+  });
+
   try {
-    // Validate input
+   
     await PersonalDetailsSchema.validateAsync(req.body, { abortEarly: false });
 
-    // Update if exists, else create
+    
     const personal = await UserPersonalDetails.findOneAndUpdate(
-      { user: userId, deleted: { $ne: true } },
-      { user: userId, ...req.body },
-      { new: true, upsert: true }
+      { user_id: userId, deleted: { $ne: true } },
+      { user_id: userId, ...req.body },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
     );
 
     return res
@@ -78,61 +82,39 @@ export const upsertPersonalDetails = asyncHandler(async (req, res) => {
   }
 });
 
-const BankDetailsSchema = Joi.object({
-  account_no: Joi.string().min(6).required(),
-  account_holder: Joi.string().optional().allow(""),
-  ifsc_code: Joi.string().pattern(/^[A-Z]{4}0[A-Z0-9]{6}$/).required(),
-  branch_name: Joi.string().required(),
-  bank_name: Joi.string().required(),
-});
 
-//  Create or Update Bank Details for logged-in user
 export const upsertUserBankDetails = asyncHandler(async (req, res) => {
-  const userId = req.user?._id; // from auth middleware
-  const { account_no, account_holder, ifsc_code, branch_name, bank_name } = req.query;
-
-  if (!userId) {
-    return res
-      .status(401)
-      .json(new ApiResponse(401, null, "Unauthorized: user not logged in"));
-  }
-
-  try {
-    // Validate request body
-    await BankDetailsSchema.validateAsync(
-      { account_no, account_holder, ifsc_code, branch_name, bank_name },
-      { abortEarly: false }
-    );
-
-    // Update if exists, else create new
-    const bankDetails = await UserBankDetails.findOneAndUpdate(
-      { user: userId, deleted: { $ne: true } }, // find existing details
-      { user: userId, account_no, account_holder, ifsc_code, branch_name, bank_name },
-      { new: true, upsert: true } // upsert = update or insert
-    );
-
-    return res
-      .status(200)
-      .json(new ApiResponse(200, bankDetails, "Bank details saved successfully"));
-  } catch (error) {
-    if (error.isJoi) {
-      return res.status(400).json(
-        new ApiResponse(
-          400,
-          null,
-          error.details.map((d) => d.message)
-        )
-      );
-    }
-    console.error("UserBankDetails Error:", error);
-    return res.status(500).json(new ApiError(500, error.message));
-  }
-});
+  const userId = req.user_id;
+     const {account_no, account_holder, ifsc_code, branch_name, bank_name} = req.body;
+ 
+     const BankDetailsSchema = Joi.object({
+         account_no: Joi.string().min(9).required(),
+         account_holder: Joi.string().optional().allow(""),
+         ifsc_code: Joi.string().pattern(/^[A-Z]{4}0[A-Z0-9]{6}$/).required(),
+         branch_name: Joi.string().max(50).required(),
+         bank_name: Joi.string().max(50).required(),
+     });
+ 
+     await BankDetailsSchema.validateAsync( {account_no, account_holder, ifsc_code, branch_name, bank_name},  {abortEarly: false},  );
+ 
+     const bankDetails = await UserBankDetails.findOneAndUpdate(
+         {user_id: userId}, 
+         {user_id: userId, account_no, account_holder, ifsc_code, branch_name, bank_name},
+         {new: true, upsert: true},
+     );
+ 
+ 
+ 
+     return res.status(200).json(new ApiResponse(200, bankDetails, "Bank data saved successfully"));
+ 
+ }); 
 
 
+export const updateCompanyInformation = asyncHandler(async (req, res) => {
+    const userId = req.user?._id; // from auth middleware
+    const {companyName, website, GSTIN, PAN} = req.body;
 
-// Joi schema
-const CompanyInformationSchema = Joi.object({
+    const CompanyInformationSchema = Joi.object({
     companyName: Joi.string().min(2).max(100).required(),
     website: Joi.string().uri().required(),
     GSTIN: Joi.string()
@@ -143,10 +125,6 @@ const CompanyInformationSchema = Joi.object({
         .required(),
 });
 
-//  Create or Update company info for logged-in user
-export const updateCompanyInformation = asyncHandler(async (req, res) => {
-    const userId = req.user?._id; // from auth middleware
-    const {companyName, website, GSTIN, PAN} = req.body;
 
     if (!userId) {
         return res.status(401).json(new ApiResponse(401, null, "Unauthorized: user not logged in"));
@@ -184,9 +162,12 @@ export const updateCompanyInformation = asyncHandler(async (req, res) => {
 });
 
 
+export const upsertUserAddress = asyncHandler(async (req, res) => {
+  const userId = req.user?._id; 
+  const { PinCode, city, state, country, block, street, landmark } = req.body;
 
-// Joi schema for validation
-const AddressSchema = Joi.object({
+
+  const AddressSchema = Joi.object({
   PinCode: Joi.number().required(),
   city: Joi.string().required(),
   state: Joi.string().required(),
@@ -195,11 +176,6 @@ const AddressSchema = Joi.object({
   street: Joi.string().optional().allow(""),
   landmark: Joi.string().optional(),
 });
-
-// Create or Update address info for logged-in user
-export const upsertUserAddress = asyncHandler(async (req, res) => {
-  const userId = req.user?._id; // from auth middleware
-  const { PinCode, city, state, country, block, street, landmark } = req.body;
 
   if (!userId) {
     return res

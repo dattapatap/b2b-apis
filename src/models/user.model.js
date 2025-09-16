@@ -30,7 +30,7 @@ const userSchema = new Schema(
   }
 );
 
-// 🔹 Virtuals
+
 userSchema.virtual("personal_details", {
   ref: "UserPersonalDetails",
   localField: "_id",
@@ -66,7 +66,6 @@ userSchema.virtual("bank_details", {
   justOne: true,
 });
 
-// 🔹 Password hashing
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
   this.password = await bcrypt.hash(this.password, 10);
@@ -77,7 +76,6 @@ userSchema.methods.isPasswordCorrect = async function (password) {
   return await bcrypt.compare(password, this.password);
 };
 
-// 🔹 JWT tokens
 userSchema.methods.generateAccessToken = function (days) {
   return jwt.sign(
     { id: this._id, roles: this.roles, mobile: this.mobile },
@@ -94,14 +92,14 @@ userSchema.methods.generateRefreshToken = function (days) {
   );
 };
 
-// 🔹 Remove __v and replace _id with id
+
 userSchema.set("toJSON", {
   virtuals: true,
   transform: (doc, ret) => {
     ret.id = ret._id;
     delete ret._id;
     delete ret.__v;
-    delete ret.password; // optional: hide password
+    delete ret.password; 
     return ret;
   },
 });

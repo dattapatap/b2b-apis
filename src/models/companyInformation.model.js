@@ -33,7 +33,7 @@ const companyInfoSchema = new Schema(
     {timestamps: true},
 );
 
-personalDetailsSchema.set("toJSON", {
+companyInfoSchema.set("toJSON", {
   virtuals: true,
   transform: function (doc, ret) {
     delete ret.__v;
