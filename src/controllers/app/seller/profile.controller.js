@@ -16,6 +16,10 @@ import { UserBussinessCard } from "../../../models/userBusinessCard.model.js";
 import { deleteFromCloudinary, uploadOnCloudinary } from "../../../utils/cloudinary.js";
 // import {CompanyInformation} from "../../../models/companyInformation.model.js";
 
+const allowedExtensions = [".jpg", ".jpeg", ".png"];
+const maxFileSize = 2 * 1024 * 1024; // 2MB
+
+
 
 export const getUserProfile = asyncHandler(async (req, res) => {
   const userId = req.user?._id;
@@ -414,7 +418,7 @@ export const updateBankDetails = asyncHandler(async (req, res) => {
 
 
 export const upsertPersonalDetails = asyncHandler(async (req, res) => {
-  const userId = req.user?._id; // from auth middleware
+  const userId = req.user?._id; 
 
 
   const PersonalDetailsSchema = Joi.object({
@@ -476,6 +480,72 @@ export const upsertPersonalDetails = asyncHandler(async (req, res) => {
         )
       );
     }
+    return res.status(500).json(new ApiError(500, error.message));
+  }
+});
+
+
+export const uploadCompanyLogo = asyncHandler(async (req, res) => {
+  try {
+    const userId = req.user?._id;
+
+    if (!userId) {
+      return res
+        .status(401)
+        .json(new ApiResponse(401, null, "Unauthorized: user not logged in"));
+    }
+
+    if (!req.file) {
+      return res
+        .status(400)
+        .json(new ApiResponse(400, null, "Logo file is required"));
+    }
+
+    const fileExtension = req.file.originalname.substring(
+      req.file.originalname.lastIndexOf(".")
+    );
+
+    if (!allowedExtensions.includes(fileExtension.toLowerCase())) {
+      return res
+        .status(400)
+        .json(new ApiResponse(400, null, "Only .jpg, .jpeg, .png are allowed"));
+    }
+
+    if (req.file.size > maxFileSize) {
+      return res
+        .status(400)
+        .json(new ApiResponse(400, null, "File size exceeds 2MB"));
+    }
+
+    // Get user's personal details
+    let personalDetails = await UserPersonalDetails.findOne({
+      user_id: userId,
+      deleted: { $ne: true },
+    });
+
+    // If already has a logo → delete old one
+    if (personalDetails?.company_logo) {
+      await deleteFromCloudinary(personalDetails.company_logo);
+    }
+
+    // Upload new logo
+    const imageUrl = await uploadOnCloudinary(req.file.path, "logos");
+
+    // Save/Update DB
+    if (!personalDetails) {
+      personalDetails = await UserPersonalDetails.create({
+        user_id: userId,
+        company_logo: imageUrl,
+      });
+    } else {
+      personalDetails.company_logo = imageUrl;
+      await personalDetails.save();
+    }
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, personalDetails, "Company logo uploaded successfully"));
+  } catch (error) {
     return res.status(500).json(new ApiError(500, error.message));
   }
 });

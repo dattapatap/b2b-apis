@@ -88,6 +88,7 @@ sellerRouter.post("/profile/update-bussiness-card", upload.fields([{ name: "fron
 sellerRouter.route("/user-profile").get(profileController.getUserProfile)
 
 
+sellerRouter.post("/company-logo", upload.single("company_logo"),profileController.uploadCompanyLogo);
 
 
 // Product APIs
@@ -124,9 +125,6 @@ sellerRouter.get("/product-additional-details/:productId", productSpecificationC
 //personal Details
 router.route("/seller/personal_details").put(personalDetailsController.upsertPersonalDetails);
 router.route("/seller/business_details").put(profileController.upsertBusinessDetails);
-
-
-
 
 
 // Mount seller routes under /seller prefix
