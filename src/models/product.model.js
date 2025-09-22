@@ -8,6 +8,10 @@ const productSchema = new mongoose.Schema(
         name: {type: String, required: true, trim: true, index: true},
         slug: {type: String, index: true},
         description: {type: String},
+        city:{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Cities",
+        },
         industry: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Industries",
@@ -30,6 +34,8 @@ const productSchema = new mongoose.Schema(
             default: "inactive",
             index: true,
         },
+        
+        location: { type: String },
 
         price: {required: false, type: Number},
         product_unit: { type: mongoose.Schema.Types.ObjectId, ref: "ProductType" },

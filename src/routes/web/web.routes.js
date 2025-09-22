@@ -14,6 +14,8 @@ import * as collectionController from "../../controllers/web/collection.controll
 import * as brandsController from "../../controllers/web/brands.controller.js";
 import * as ProfileController from "../../controllers/web/buyer/profile.controller.js";
 import * as productController from "../../controllers/web/seller/product.controller.js";
+import * as ProductSearchController from "../../controllers/web/buyer/productsearch.controller.js";
+import * as SupplierController from "../../controllers/web/buyer/supplier.controller.js";
 
 
 const router = Router();
@@ -61,6 +63,10 @@ router.get("/collection/:id", collectionController.getCollectionById);
 router.get("/brands",  brandsController.getAllBrands);
 router.get("/brand/:id", brandsController.getBrandById);
 
+
+//Search Products
+router.route("/buyer/productsearch").get(ProductSearchController.searchProducts);
+router.route("/buyer/suppliers").get(SupplierController.getsellers);
 
 //Buyer personal information
 router.route("/buyer/personal-info").put(ProfileController.upsertPersonalDetails);
