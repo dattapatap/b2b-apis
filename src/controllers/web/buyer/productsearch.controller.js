@@ -5,9 +5,9 @@ import {ApiResponse} from "../../../utils/ApiResponse.js";
 import {Product} from "../../../models/product.model.js";
 
 export const searchProducts = asyncHandler(async (req, res) => {
-    const {keyword,category,subcategory,city,industry, minPrice,maxPrice,status,location,minRating,specs,page = 1,limit = 10,sortBy,} = req.query;
+    const {keyword,category,subcategory,city,industry, minPrice,maxPrice,status,location,minRating,specs,
+        page = 1,limit = 10,sortBy,} = req.query;
 
-    // Validation schema
     const SearchSchema = Joi.object({
         keyword: Joi.string().optional().allow(""),
         category: Joi.string().optional().allow(""),
@@ -26,7 +26,6 @@ export const searchProducts = asyncHandler(async (req, res) => {
     });
 
     try {
-        // Validate query parameters
         await SearchSchema.validateAsync(req.query, {abortEarly: false});
 
         let query = {is_banned: "false"};
@@ -52,7 +51,7 @@ export const searchProducts = asyncHandler(async (req, res) => {
             }));
         }
 
-        // Sorting
+
         let sortOptions = {};
         if (sortBy === "price_asc") sortOptions.price = 1;
         else if (sortBy === "price_desc") sortOptions.price = -1;
@@ -62,6 +61,7 @@ export const searchProducts = asyncHandler(async (req, res) => {
         const skip = (Number(page) - 1) * Number(limit);
 
         const products = await Product.find(query)
+        .select("  -stages -status -additional_details -createdAt -updatedAt -__v -deleted -is_banned")
             .populate("category subcategories seller_id product_unit media")
             .sort(sortOptions)
             .skip(skip)

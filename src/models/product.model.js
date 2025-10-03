@@ -80,7 +80,6 @@ const productSchema = new mongoose.Schema(
 
 productSchema.index({name: "text",  category: 1});
 
-// Capitalize the first letter of each word
 function capitalizeWords(str) {
     return str.replace(/\b\w/g, (char) => char.toUpperCase());
 }

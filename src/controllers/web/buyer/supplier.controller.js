@@ -7,7 +7,7 @@ import { CompanyInformation } from "../../../models/companyInformation.model.js"
 import { Product } from "../../../models/product.model.js";
 
 export const getsellers = asyncHandler(async (req, res) => {
-  // ✅ Validate query params
+
   const querySchema = Joi.object({
     category: Joi.string().optional(),
     city: Joi.string().optional(),
@@ -35,7 +35,6 @@ export const getsellers = asyncHandler(async (req, res) => {
     })
     .lean();
 
-  // Filter sellers by category (if given)
   if (category) {
     const sellerIds = sellers.map((s) => s._id);
 
@@ -43,7 +42,6 @@ export const getsellers = asyncHandler(async (req, res) => {
       .populate("category", "name")
       .lean();
 
-    // only sellers who have this category
     const allowedIds = products
       .filter((p) => p.category?.name?.toLowerCase() === category.toLowerCase())
       .map((p) => p.seller_id.toString());
@@ -51,7 +49,6 @@ export const getsellers = asyncHandler(async (req, res) => {
     sellers = sellers.filter((s) => allowedIds.includes(s._id.toString()));
   }
 
-  // Clean response
   const result = sellers.map((s) => ({
     id: s._id,
     company_name: s.business_details?.companyName || s.name,

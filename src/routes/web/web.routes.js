@@ -16,30 +16,11 @@ import * as ProfileController from "../../controllers/web/buyer/profile.controll
 import * as productController from "../../controllers/web/seller/product.controller.js";
 import * as ProductSearchController from "../../controllers/web/buyer/productsearch.controller.js";
 import * as SupplierController from "../../controllers/web/buyer/supplier.controller.js";
+import * as InquiryController from "../../controllers/web/buyer/inquiry.controller.js";
 
 
 const router = Router();
 
-
-// Public routes
-router.post("/login", userController.sendOtp);
-router.post("/verify-otp", userController.verifyOtp);
-
-
-const adminAuthMiddleware = [verifyJWT, requireRole(["buyer", "seller"])];
-router.use(adminAuthMiddleware);
-
-router.route("/refresh-token").post( userController.refreshAccessToken);
-router.route("/user").get(userController.getCurrentUser);
-router.route("/logout").post(  userController.logoutUser);
-
-
-// Product APIs
-router.route("/buyer/product/create").post( productController.createProduct);
-router.route("/buyer/product/add-categories").post( productController.addCategoriesToProduct);
-router.route("/buyer/product/add-product-catlog").post( upload.single("product_catlog"),  productController.addProductCatlog);
-router.route("/buyer/product/add-product-media").post( upload.single("product_media"),  productController.addMedia);
-router.route("/buyer/product/add-video").post( productController.addVideoUrl);
 
 
 
@@ -64,6 +45,28 @@ router.get("/brands",  brandsController.getAllBrands);
 router.get("/brand/:id", brandsController.getBrandById);
 
 
+// Public routes
+router.post("/login", userController.sendOtp);
+router.post("/verify-otp", userController.verifyOtp);
+
+
+const adminAuthMiddleware = [verifyJWT, requireRole(["buyer", "seller"])];
+router.use(adminAuthMiddleware);
+
+router.route("/refresh-token").post( userController.refreshAccessToken);
+router.route("/user").get(userController.getCurrentUser);
+router.route("/logout").post(  userController.logoutUser);
+
+
+// Product APIs
+router.route("/buyer/product/create").post( productController.createProduct);
+router.route("/buyer/product/add-categories").post( productController.addCategoriesToProduct);
+router.route("/buyer/product/add-product-catlog").post( upload.single("product_catlog"),  productController.addProductCatlog);
+router.route("/buyer/product/add-product-media").post( upload.single("product_media"),  productController.addMedia);
+router.route("/buyer/product/add-video").post( productController.addVideoUrl);
+
+
+
 //Search Products
 router.route("/buyer/productsearch").get(ProductSearchController.searchProducts);
 router.route("/buyer/suppliers").get(SupplierController.getsellers);
@@ -81,6 +84,16 @@ router.route("/buyer/bankdetails").put( ProfileController.upsertUserBankDetails)
 //Buyer Address
 router.route("/buyer/address-info").put(ProfileController.upsertUserAddress);
 
+//Inquiry APIs (Buyer & Seller Communication)
+router.route("/buyer/inquiry").post(InquiryController.createInquiry); 
+router.route("/inquiry/:inquiryId/message").post(InquiryController.sendMessage);
+router.route("/buyer/inquiries").get(InquiryController.getBuyerInquiries);
+router.route("/seller/inquiries").get(InquiryController.getSellerInquiries);
+router.route("/inquiry/:inquiryId").get(InquiryController.getInquiryChat);
+
+//posts
+import * as PostController from "../../controllers/web/buyer/post.controller.js";
+router.route("/buyer/post").post(PostController.createPost);
 
 
 export default router;

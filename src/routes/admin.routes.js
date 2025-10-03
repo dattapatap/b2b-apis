@@ -13,6 +13,7 @@ import * as groupsController from "../controllers/admin/groups.controller.js"
 import * as divisionController from "../controllers/admin/division.controller.js"
 import * as appFlashController from "../controllers/admin/App/flashScreen.controller.js"
 import * as appBannersController from "../controllers/admin/App/appBanner.controller.js"
+import * as packageController from "../controllers/admin/package.controller.js"
 
 
 import {upload} from "../middlewares/multer.middleware.js";
@@ -36,7 +37,6 @@ router.post("/sign-out", verifyJWT, adminController.logoutUser);
 
 router.get("/user", adminController.getCurrentUser);
 router.patch("/avatar", upload.single("avatar"), adminController.updateUserAvatar);
-
 
 
 router.get("/cities", citiesController.getAllCities);
@@ -109,6 +109,11 @@ router.route("/relational/divisions").get(divisionController.getAll).post(divisi
 router.route("/relational/divisions/:id").get(divisionController.getById).put(upload.single("image"), divisionController.update).delete(divisionController.deleteDivision);
 router.route("/relational/divisions/:id/status").patch(divisionController.changeStatus);
 router.route("/relational/divisions/reorder").patch(divisionController.reorderDivisions);
+
+
+// Package Management
+router.route("/packages").get(packageController.getAllPackages).post(packageController.createPackage);
+router.route("/packages/:id").get(packageController.getPackageById).put(packageController.updatePackage).delete(packageController.deletePackage);
 
 
 

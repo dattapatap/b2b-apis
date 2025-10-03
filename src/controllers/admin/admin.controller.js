@@ -8,6 +8,7 @@ import * as crypto from 'crypto';
 import bcrypt from "bcrypt"
 export { AdminUserRoles } from "../../models/adminUserRoles.model.js";
 import { AdminUser } from "../../models/adminUser.model.js";
+import { log } from "console";
 
 
 // Generate Access And Refresh Token
@@ -49,7 +50,8 @@ export const login = asyncHandler(async (req, res) => {
         throw new ApiError(401, "Invalid user credentials")
     }
     
-    const isAdmin = user.roles.some(role => role.role_id.role_name === 'admin');
+    const isAdmin = user.roles.some(role => role.role_id._doc?.role_name == 'admin' || role.role_id.role_name == 'admin');
+  
     if (!isAdmin) {
         return res.status(403).json({ message: 'Access Denied' });
     }
