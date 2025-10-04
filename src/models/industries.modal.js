@@ -1,4 +1,4 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, {Schema} from "mongoose";
 import MongooseDelete from "mongoose-delete";
 
 const industrySchema = new Schema(
@@ -8,12 +8,12 @@ const industrySchema = new Schema(
             required: true,
             trim: true,
         },
-        
+
         slug: {
             type: String,
             required: true,
         },
-        
+
         image: {
             type: String,
         },
@@ -26,13 +26,12 @@ const industrySchema = new Schema(
             required: true,
         },
     },
-    {  timestamps: true }  
-
+    {timestamps: true},
 );
 
 // Capitalize the first letter of each word
 function capitalizeWords(str) {
-    return str.replace(/\b\w/g, char => char.toUpperCase());
+    return str.replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 industrySchema.pre("save", function (next) {
@@ -43,13 +42,13 @@ industrySchema.pre("save", function (next) {
 });
 
 industrySchema.virtual("categories", {
-    ref: "Categories", 
-    localField: "_id", 
-    foreignField: "industry", 
-    justOne: false, 
+    ref: "Categories",
+    localField: "_id",
+    foreignField: "industry",
+    justOne: false,
 });
 
-industrySchema.plugin(MongooseDelete, { deleted: true, overrideMethods: 'all' });
+industrySchema.plugin(MongooseDelete, {deleted: true, overrideMethods: "all"});
 industrySchema.set("toJSON", {
     transform: function (doc, ret) {
         delete ret.__v;
@@ -58,7 +57,5 @@ industrySchema.set("toJSON", {
         return ret;
     },
 });
-
-
 
 export const Industries = mongoose.model("Industries", industrySchema);

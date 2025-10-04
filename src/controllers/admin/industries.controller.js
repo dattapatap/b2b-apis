@@ -168,8 +168,7 @@ export const deleteIndustry = asyncHandler(async (req, res) => {
             return res.status(404).json(new ApiResponse(404, null, "Industry not found or already deleted"));
         }
 
-        industry.isDeleted = true;
-        await industry.save();
+       await industry.delete();
         return res.status(200).json(new ApiResponse(200, null, "Industry deleted successfully"));
 
     } catch (error) {

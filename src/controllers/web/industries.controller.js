@@ -39,71 +39,49 @@ export const getAllIndustry = asyncHandler(async (req, res) => {
 export const getCollectionByIndustry = asyncHandler(async (req, res) => {
     const { slug } = req.params;
 
-    const industry = await Industries.findOne({ slug, deleted: { $ne: true } })
-        .populate({
-            path: "categories",
-            match: { deleted: { $ne: true } },
-            select: "name slug industry subcategories",
-            populate: {
-                path: "subcategories",
-                match: { deleted: { $ne: true } },
-                select: "name slug category collections",
-                populate: {
-                    path: "collections",
-                    match: { deleted: { $ne: true } },
-                    select: "name slug subcategory"
-                }
-            }
-        });
+    const industry = await Industries.aggregate([
+        { $match: { slug, deleted: { $ne: true } } },
 
-    if (!industry) {
+        // lookup categories
+        {
+            $lookup: {
+                from: "categories",
+                localField: "_id",
+                foreignField: "industry",
+                as: "categories",
+                pipeline: [
+                    { $match: { deleted: { $ne: true } } },
+
+                    // lookup subcategories
+                    {
+                        $lookup: {
+                            from: "subcategories",
+                            localField: "_id",
+                            foreignField: "category",
+                            as: "subcategories",
+                            pipeline: [
+                                { $match: { deleted: { $ne: true } } },
+                            ]
+                        }
+                    },
+                    { $project: { name: 1, slug: 1, subcategories: 1 } }
+                ]
+            }
+        },
+        { $project: { name: 1, slug: 1, categories: 1 } }
+    ]);
+
+    if (!industry.length) {
         throw new ApiError(404, "Industry not found");
     }
-
-    // Build hierarchical response
-    const categories = industry.categories.map(cat => ({
-        _id: cat._id,
-        name: cat.name,
-        slug: cat.slug,
-        parentIndustry: {
-            _id: industry._id,
-            name: industry.name,
-            slug: industry.slug
-        },
-        subcategories: cat.subcategories.map(sub => ({
-            _id: sub._id,
-            name: sub.name,
-            slug: sub.slug,
-            parentCategory: {
-                _id: cat._id,
-                name: cat.name,
-                slug: cat.slug
-            },
-            collections: sub.collections.map(col => ({
-                _id: col._id,
-                name: col.name,
-                slug: col.slug,
-                parentSubcategory: {
-                    _id: sub._id,
-                    name: sub.name,
-                    slug: sub.slug
-                }
-            }))
-        }))
-    }));
 
     return res.status(200).json(
         new ApiResponse(
             200,
             {
-                industry: {
-                    _id: industry._id,
-                    name: industry.name,
-                    slug: industry.slug
-                },
-                categories
+                industry: industry[0],
             },
-            "Collection fetched successfully"
+            "Categories fetched successfully"
         )
     );
 });
@@ -135,105 +113,66 @@ export const getIndustryDetails = asyncHandler(async (req, res) => {
 });
 
 export const getAllIndustryWithCollections = asyncHandler(async (req, res) => {
-    const { id } = req.params;
+    const { slug } = req.params;
 
-    try {
-        const [industry] = await Industries.aggregate([
-            {
-                $match: {
-                    _id: new mongoose.Types.ObjectId(id),
-                    deleted: { $ne: true },
-                },
-            },
-            // Lookup categories
-            {
-                $lookup: {
-                    from: "categories",
-                    localField: "categories",
-                    foreignField: "_id",
-                    as: "categories",
-                },
-            },
-            {
-                $addFields: {
-                    categories: {
-                        $filter: {
-                            input: "$categories",
-                            as: "category",
-                            cond: { $eq: ["$$category.isDeleted", false] },
-                        },
-                    },
-                },
-            },
-            // Lookup collections
-            {
-                $lookup: {
-                    from: "collections",
-                    localField: "_id",
-                    foreignField: "industry",
-                    as: "collections",
-                },
-            },
-            {
-                $addFields: {
-                    collections: {
-                        $filter: {
-                            input: "$collections",
-                            as: "collection",
-                            cond: { $eq: ["$$collection.isDeleted", false] },
-                        },
-                    },
-                },
-            },
-            // Lookup subcategories of collections
-            {
-                $lookup: {
-                    from: "subcategories",
-                    localField: "collections.subcategory",
-                    foreignField: "_id",
-                    as: "subcategoryDetails",
-                },
-            },
-            // Format collections (only selected fields)
-            {
-                $addFields: {
-                    collections: {
-                        $map: {
-                            input: "$collections",
-                            as: "collection",
-                            in: {
-                                _id: "$$collection._id",
-                                name: "$$collection.name",
-                                image: "$$collection.image",
-                                slug: "$$collection.slug",
-                                heading: "$$collection.heading",
-                            },
-                        },
-                    },
-                },
-            },
-            // Final projection
-            {
-                $project: {
-                    _id: 1,
-                    name: 1,
-                    slug: 1,
-                    heading: 1,
-                    categories: 1,
-                    collections: 1,
-                },
-            },
-            { $limit: 1 },
-        ]);
+    const industry = await Industries.aggregate([
+        { $match: { slug, deleted: { $ne: true } } },
 
-        if (!industry) {
-            throw new ApiError(404, "Industry not found");
-        }
+        // lookup categories
+        {
+            $lookup: {
+                from: "categories",
+                localField: "_id",
+                foreignField: "industry",
+                as: "categories",
+                pipeline: [
+                    { $match: { deleted: { $ne: true } } },
 
-        return res.status(200).json(
-            new ApiResponse(200, industry, "Industry details with categories and collections fetched successfully")
-        );
-    } catch (error) {
-        throw new ApiError(500, error.message || "Something went wrong");
+                    // lookup subcategories
+                    {
+                        $lookup: {
+                            from: "subcategories",
+                            localField: "_id",
+                            foreignField: "category",
+                            as: "subcategories",
+                            pipeline: [
+                                { $match: { deleted: { $ne: true } } },
+
+                                // lookup collections
+                                {
+                                    $lookup: {
+                                        from: "collections",
+                                        localField: "_id",
+                                        foreignField: "subcategory",
+                                        as: "collections",
+                                        pipeline: [
+                                            { $match: { deleted: { $ne: true } } },
+                                            { $project: { name: 1, slug: 1 } }
+                                        ]
+                                    }
+                                },
+                                { $project: { name: 1, slug: 1, collections: 1 } }
+                            ]
+                        }
+                    },
+                    { $project: { name: 1, slug: 1, subcategories: 1 } }
+                ]
+            }
+        },
+        { $project: { name: 1, slug: 1, categories: 1 } }
+    ]);
+
+    if (!industry.length) {
+        throw new ApiError(404, "Industry not found");
     }
+
+    return res.status(200).json(
+        new ApiResponse(
+            200,
+            {
+                industry: industry[0],
+            },
+            "Categories fetched successfully"
+        )
+    );
 });

@@ -111,14 +111,13 @@ export const updateSubCategory = asyncHandler(async (req, res) => {
         await SubCategorySchema.validateAsync({ id, name, slug, heading, sr_no, category_id, group, operation: "update" },{ abortEarly: false });
         slug = convertSlug(slug);
 
-        const sub_category = await SubCategories.findOne({ _id: id, isDeleted: false });
+        const sub_category = await SubCategories.findOne({ _id: id, deleted: { $ne: true } });
         if (!sub_category) {
             throw new ApiError(404,  "Sub Category not found");
         }
 
         const updatedSlug = name ? convertSlug(name) : slug;
 
-        // if file attached upload and remove old file
         if (req.file) {
             const fileExtension = req.file.originalname.substring(req.file.originalname.lastIndexOf("."));
             if (!allowedExtensions.includes(fileExtension)) {
@@ -164,13 +163,12 @@ export const updateSubCategory = asyncHandler(async (req, res) => {
 export const deleteSubCategory = asyncHandler(async (req, res) => {
     const {id} = req.params;
     try {
-        const subCategory = await SubCategories.findOne({ _id: id, isDeleted: false });
+        const subCategory = await SubCategories.findOne({ _id: id, deleted: { $ne: true } });
         if (!subCategory) {
             return res.status(404).json(new ApiResponse(404, null, "Sub Category not found or already deleted"));
         }
 
-        subCategory.isDeleted = true;
-        await subCategory.save();
+        await subCategory.delete();
         return res.status(200).json(new ApiResponse(200, null, "Sub Category deleted successfully"));
 
     } catch (error) {
