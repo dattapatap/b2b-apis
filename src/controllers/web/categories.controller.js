@@ -11,12 +11,12 @@ export const getAllCategory = asyncHandler(async (req, res) => {
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
 
-    const categories = await Categories.find({isDeleted: false})
+    const categories = await Categories.find({deleted: {$ne: true}})
         .skip(skip)
         .limit(limit)
         .select("-isDeleted -createdAt -updatedAt -__v -industry");
 
-    const tatalCategories = await Categories.find({isDeleted: false}).countDocuments();
+    const tatalCategories = await Categories.find({deleted: {$ne: true}}).countDocuments();
     const totalPages = Math.ceil(tatalCategories / limit);
 
     return res.status(200).json(
@@ -41,18 +41,18 @@ export const getCategoryDetails = asyncHandler(async (req, res) => {
     const {slug} = req.params;
     let category = [];
 
-
     if (mongoose.Types.ObjectId.isValid(slug)) {
         category = await Categories.findById(id)
                 .populate({
                     path: "subcategories",
-                    match: { isDeleted: false },
+                    match:  {deleted: {$ne: true}} ,
                     select: "-__v -isDeleted -createdAt -updatedAt", 
                     populate: {
                         path: "collections",
                         match: { isDeleted: false },
                         select: "-__v -isDeleted -createdAt -updatedAt", 
                     },
+                    
                 })
                 .select("-isDeleted -createdAt -updatedAt -__v");
     } else {
@@ -60,11 +60,11 @@ export const getCategoryDetails = asyncHandler(async (req, res) => {
                     .populate('industry',  'name slug heading image')
                     .populate({
                         path: "subcategories",
-                        match: { isDeleted: false },
+                        match: {deleted: {$ne: true}},
                         select: "-__v -isDeleted -createdAt -updatedAt", 
                         populate: {
                             path: "collections",
-                            match: { isDeleted: false },
+                            match:{deleted: {$ne: true}},
                             select: "-__v -isDeleted -createdAt -updatedAt", 
                         },
                     })

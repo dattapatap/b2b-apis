@@ -8,10 +8,12 @@ const industrySchema = new Schema(
             required: true,
             trim: true,
         },
+        
         slug: {
             type: String,
             required: true,
         },
+        
         image: {
             type: String,
         },

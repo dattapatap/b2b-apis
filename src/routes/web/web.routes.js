@@ -21,14 +21,11 @@ import * as InquiryController from "../../controllers/web/buyer/inquiry.controll
 
 const router = Router();
 
-
-
-
-
 router.get("/cities",  citiesController.getAllCities);
 router.get("/citie/:id", citiesController.getCityById);
 
 router.get("/industries",  industriesController.getAllIndustry);
+router.get("/industry/:slug/categories", industriesController.getCollectionByIndustry);
 router.get("/industries-with-collections/:id",  industriesController.getAllIndustryWithCollections);
 router.get("/industry/:slug", industriesController.getIndustryDetails);
 
