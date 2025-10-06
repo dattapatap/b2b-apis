@@ -95,6 +95,8 @@ router.route("/inquiry/:inquiryId").get(InquiryController.getInquiryChat);
 //posts
 import * as PostController from "../../controllers/web/buyer/post.controller.js";
 router.route("/buyer/post").post(PostController.createPost);
-
+router.route("/buyer/buylead").post(PostController.createBuyLead);
+router.route("/buyer/buylead").post(PostController.getAllBuyLeads);
+router.route("/post/:postId").get(PostController.getBuyLeadById);
 
 export default router;

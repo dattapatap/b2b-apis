@@ -148,7 +148,7 @@ export const getAllIndustryWithCollections = asyncHandler(async (req, res) => {
                                         as: "collections",
                                         pipeline: [
                                             { $match: { deleted: { $ne: true } } },
-                                            { $project: { name: 1, slug: 1 } }
+                                            { $project: { name: 1, slug: 1,image:1 } }
                                         ]
                                     }
                                 },
@@ -156,11 +156,11 @@ export const getAllIndustryWithCollections = asyncHandler(async (req, res) => {
                             ]
                         }
                     },
-                    { $project: { name: 1, slug: 1, subcategories: 1 } }
+                    { $project: { name: 1, slug: 1, subcategories: 1 ,image:1} }
                 ]
             }
         },
-        { $project: { name: 1, slug: 1, categories: 1 } }
+        { $project: { name: 1, slug: 1, categories: 1, } }
     ]);
 
     if (!industry.length) {
