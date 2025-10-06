@@ -28,13 +28,8 @@ router.get("/citie/:id", citiesController.getCityById);
 
 router.get("/industries",  industriesController.getAllIndustry);
 router.get("/industries-with-categories/:slug", industriesController.getCollectionByIndustry);
-router.get("/industries-with-collections/:id",  industriesController.getAllIndustryWithCollections);
+router.get("/industries-with-collections/:slug",  industriesController.getAllIndustryWithCollections);
 router.get("/industry/:slug", industriesController.getIndustryDetails);
-
-
-
-
-
 
 
 

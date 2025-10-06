@@ -18,9 +18,10 @@ export const getAllCategory = asyncHandler(async (req, res) => {
     const limit = parseInt(req.query.limit) || 20; 
     const skip = (page - 1) * limit;
 
-    const categories = await Categories.find({ isDeleted: false }).populate("industry", '-__v -isDeleted -createdAt -updatedAt')
+    const categories = await Categories.find({ deleted:{$ne : true
+    } }).populate("industry", '-__v -isDeleted -createdAt -updatedAt')
                             .skip(skip).limit(limit).select("-isDeleted -createdAt -updatedAt -__v");
-    const totalCategory = await Categories.find({ isDeleted: false }).countDocuments();
+    const totalCategory = await Categories.find({ deleted:{$ne : true} }).countDocuments();
     const totalPages = Math.ceil(totalCategory / limit);
 
     return res.status(200).json(
@@ -63,7 +64,7 @@ export const createCategory = asyncHandler(async (req, res) => {
         await CategorySchema.validateAsync({ name,slug, heading, sr_no, industry_id, operation: "create" },{ abortEarly: false });
         slug = convertSlug(slug);
 
-        const lastCategory = await Categories.findOne({ isDeleted: false }, { sr_no: 1 }).sort({ sr_no: -1 }).lean();
+        const lastCategory = await Categories.findOne({ deleted:{$ne : true} }, { sr_no: 1 }).sort({ sr_no: -1 }).lean();
         sr_no = lastCategory?.sr_no ? lastCategory.sr_no + 1 : 1;
 
         if (!req.file) {
@@ -163,11 +164,12 @@ export const updateCategory = asyncHandler(async (req, res) => {
 });
 
 
+
 // Delete a city
 export const deleteCategory = asyncHandler(async (req, res) => {
     const {id} = req.params;
     try {
-        const industry = await Categories.findOne({ _id: id, isDeleted: false });
+        const industry = await Categories.findOne({ _id: id, deleted:{$ne : true} });
         if (!industry) {
             return res.status(404).json(new ApiResponse(404, null, "Category not found or already deleted"));
         }

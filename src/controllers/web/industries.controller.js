@@ -61,6 +61,7 @@ export const getCollectionByIndustry = asyncHandler(async (req, res) => {
                             as: "subcategories",
                             pipeline: [
                                 { $match: { deleted: { $ne: true } } },
+
                             ]
                         }
                     },
