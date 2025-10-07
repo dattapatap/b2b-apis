@@ -8,6 +8,7 @@ import { Inquiry } from "./models/inquiry.model.js";
 
 
 dotenv.config();
+export let ioInstance;
 
 connDB().then( ()=>{
     const server = http.createServer(app);
@@ -40,6 +41,7 @@ connDB().then( ()=>{
             console.log("User disconnected:", socket.id);
         });
     });
+    ioInstance = io;
 
         const PORT = process.env.PORT || 8000;
     server.listen(PORT, () => {

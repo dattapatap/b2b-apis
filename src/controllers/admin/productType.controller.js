@@ -83,8 +83,8 @@ export const deleteProductType = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Product type not found or already deleted");
     }
 
-    productType.isDeleted = true;
-    await productType.save();
+
+   await productType.delete(); // Soft delete
     return res.status(200).json(new ApiResponse(200, null, "Product type deleted successfully"));
 
 });

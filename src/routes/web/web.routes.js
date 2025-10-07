@@ -17,6 +17,8 @@ import * as productController from "../../controllers/web/seller/product.control
 import * as ProductSearchController from "../../controllers/web/buyer/productsearch.controller.js";
 import * as SupplierController from "../../controllers/web/buyer/supplier.controller.js";
 import * as InquiryController from "../../controllers/web/buyer/inquiry.controller.js";
+import * as BuyLeadController from "../../controllers/web/buyer/buylead.controller.js";
+import * as NotificationController from "../../controllers/web/buyer/notification.controller.js";
 
 
 const router = Router();
@@ -30,7 +32,7 @@ router.get("/industries",  industriesController.getAllIndustry);
 router.get("/industries-with-categories/:slug", industriesController.getCollectionByIndustry);
 router.get("/industries-with-collections/:slug",  industriesController.getAllIndustryWithCollections);
 router.get("/industry/:slug", industriesController.getIndustryDetails);
-
+router.get("/industries-with-all/:slug", industriesController.getIndustry);
 
 
 router.get("/categories",  categoriesController.getAllCategory);
@@ -44,6 +46,10 @@ router.get("/collection/:id", collectionController.getCollectionById);
 
 router.get("/brands",  brandsController.getAllBrands);
 router.get("/brand/:id", brandsController.getBrandById);
+
+import * as productViewRouter from "../../controllers/web/productview.controller.js";
+router.get("/product/:id", productViewRouter.getProductFullView);
+
 
 
 // Public routes
@@ -95,8 +101,16 @@ router.route("/inquiry/:inquiryId").get(InquiryController.getInquiryChat);
 //posts
 import * as PostController from "../../controllers/web/buyer/post.controller.js";
 router.route("/buyer/post").post(PostController.createPost);
-router.route("/buyer/buylead").post(PostController.createBuyLead);
-router.route("/buyer/buylead").post(PostController.getAllBuyLeads);
-router.route("/post/:postId").get(PostController.getBuyLeadById);
+
+
+router.route("/buyer/buylead").post(BuyLeadController.createBuyLead);
+router.route("/buyer/allbuylead").get(BuyLeadController.getAllBuyLeads);
+router.route("/buyer/:id").get(BuyLeadController.getBuyLeadById);
+
+// Notifications
+router.route("/buyer/notification").post(NotificationController.createNotification);
+router.route("/buyer/notifications/:userId").get(NotificationController.getUserNotifications);
+
+
 
 export default router;

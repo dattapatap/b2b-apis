@@ -36,6 +36,59 @@ export const getAllIndustry = asyncHandler(async (req, res) => {
     );
 });
 
+
+export const getIndustry = asyncHandler(async (req, res) => {
+    const { slug } = req.params;
+
+    const industry = await Industries.aggregate([
+        { $match: { slug, deleted: { $ne: true } } },
+
+        // lookup categories
+        {
+            
+            $lookup: {
+                from: "categories",
+                localField: "_id",
+                foreignField: "industry",
+                as: "categories",
+                pipeline: [
+                    { $match: { deleted: { $ne: true } } },
+
+                    // lookup subcategories
+                    {
+                        $lookup: {
+                            from: "subcategories",
+                            localField: "_id",
+                            foreignField: "category",
+                            as: "subcategories",
+                            pipeline: [
+                                { $match: { deleted: { $ne: true } } },
+
+                            ]
+                        }
+                    },
+                    { $project: { name: 1, slug: 1, subcategories: 1 } }
+                ]
+            }
+        },
+        { $project: { name: 1, slug: 1, categories: 1 } }
+    ]);
+
+    if (!industry.length) {
+        throw new ApiError(404, "Industry not found");
+    }
+
+    return res.status(200).json(
+        new ApiResponse(
+            200,
+            {
+                industry: industry[0],
+            },
+            "Categories fetched successfully"
+        )
+    );
+});
+
 export const getCollectionByIndustry = asyncHandler(async (req, res) => {
     const { slug } = req.params;
 

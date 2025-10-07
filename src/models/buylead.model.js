@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 
 const buyLeadSchema = new mongoose.Schema(
   {
+        buyerId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     productName: {
       type: String,
       required: true,
@@ -18,14 +19,7 @@ const buyLeadSchema = new mongoose.Schema(
     description: {
       type: String,
     },
-    buyerName: {
-        type: String,
-      required: true,
-    },
-    email: {
-      type: String,
-      required: true,
-    },
+   
     phone: {
       type: String,
       required: true,
@@ -41,6 +35,7 @@ const buyLeadSchema = new mongoose.Schema(
       enum: ["pending", "approved", "closed"],
       default: "pending",
     },
+
   },
   { timestamps: true }
 );
