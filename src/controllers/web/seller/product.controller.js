@@ -78,12 +78,11 @@ export const getInactiveProducts = asyncHandler(async (req, res) => {
 
 
 
-
 export const getProductDetail = asyncHandler(async (req, res) => {
-    const product_id = req.params.id;
+    const slug = req.params.slug;
     const loggedInUser = req.user;
 
-    const product = await Product.findById(product_id)
+    const product = await Product.findOne({ slug })
                                 .populate("media", "images url type metadata")
                                 .populate("subcategories", "name slug heading image");
 
@@ -222,7 +221,7 @@ export const addMedia = asyncHandler(async (req, res) => {
     };
 
     mediaData = new ProductMedia({
-        product_id: product._id,
+        slug: product._id,
         type: "image",
         images: {
             original: uploadedUrl,
@@ -270,7 +269,7 @@ export const addVideoUrl = asyncHandler(async (req, res) => {
     }
 
     // Check for existing video
-    const existingVideo = await ProductMedia.findOne({ product_id: productId, type: "video" });
+    const existingVideo = await ProductMedia.findOne({ slug: productId, type: "video" });
 
     if (existingVideo) {
         existingVideo.url = videoUrl;

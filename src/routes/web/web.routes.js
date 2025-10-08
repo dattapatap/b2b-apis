@@ -48,7 +48,7 @@ router.get("/brands",  brandsController.getAllBrands);
 router.get("/brand/:id", brandsController.getBrandById);
 
 import * as productViewRouter from "../../controllers/web/productview.controller.js";
-router.get("/product/:id", productViewRouter.getProductFullView);
+router.get("/product/:slug", productViewRouter.getProductFullView);
 
 
 
@@ -71,6 +71,7 @@ router.route("/buyer/product/add-categories").post( productController.addCategor
 router.route("/buyer/product/add-product-catlog").post( upload.single("product_catlog"),  productController.addProductCatlog);
 router.route("/buyer/product/add-product-media").post( upload.single("product_media"),  productController.addMedia);
 router.route("/buyer/product/add-video").post( productController.addVideoUrl);
+router.route("/buyer/product/:slug").get( productController.getProductDetail);
 
 
 

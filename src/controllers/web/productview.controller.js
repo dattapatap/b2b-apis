@@ -5,26 +5,26 @@ import {Product} from "../../models/product.model.js";
 import {ProductMedia} from "../../models/productMedia.model.js";
 
 export const getProductFullView = asyncHandler(async (req, res) => {
-    const {id} = req.params;
+    const slug = req.params.slug;
 
     // Find the product and populate related fields
-    const product = await Product.findById(id)
+    const product = await Product.findOne({ slug })
         .populate({
             path: "media",
-            select: "images", // select only necessary fields",
+            select: "images", 
             model: ProductMedia,
         })
         .populate({
             path: "specifications.spec_id",
             select: "name inputType options",
         })
-        // .populate({
-        //     path: "additional_details.additional_id",
-        //     select: "name inputType options",
-        // })
+        .populate({
+            path: "additional_details.additional_id",
+            select: "name inputType options",
+        })
         .populate({
             path: "seller_id",
-            select: " profile ", // show only these fields
+            select: " profile ", 
             populate: [
                 {path: "business_details"},
                 {path: "personal_details"},
@@ -45,10 +45,10 @@ export const getProductFullView = asyncHandler(async (req, res) => {
     }));
 
     // Format additional details
-    // const additionalDetails = (product.additional_details || []).map((d) => ({
-    //     title: d.additional_id?.name || d.name || "Unknown",
-    //     value: d.value,
-    // }));
+    const additionalDetails = (product.additional_details || []).map((d) => ({
+        title: d.additional_id?.name || d.name || "Unknown",
+        value: d.value,
+    }));
 
     const mainImage = product.media?.[0]?.images?.original || null;
 
@@ -58,8 +58,8 @@ export const getProductFullView = asyncHandler(async (req, res) => {
         logo: product.seller_id?.personal_details?.company_logo || "",
         location: product.seller_id?.contacts?.[0]?.address?.city || "",
         gst: product.seller_id?.business_details?.gstin || "",
-        yearsCompleted: product.seller_id?.verifiedYears || 0,
-        review: product.seller_id?.rating || {stars: 0, count: 0},
+        yearsCompleted: product.seller_id?.verifiedYears || 10,
+        review: product.seller_id?.rating || {stars: 5, count: 4},
         mobile: product.seller_id?.personal_details?.primary_mobile || "",
         contactSupplier: product.seller_id?.contacts?.[0]?.email || "",
     };
@@ -75,18 +75,22 @@ export const getProductFullView = asyncHandler(async (req, res) => {
         .select("name price media slug")
         .lean();
 
+
+        console.log(product.additional_details)
+
+
     // Build final response
     const responseData = {
         product: {
             id: product._id,
             name: product.name,
             slug: product.slug,
-            price: product.price,
+            price: `₹${product.price}`,
             unit: product.product_unit?.name || "Piece",
             description: product.description,
             product_type: product.product_type,
             specifications,
-            // additional_details: additionalDetails,
+            additional_details: additionalDetails,
             mainImage,
             brochure: product.media.filter((m) => m.type === "brochure"),
         },

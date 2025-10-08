@@ -148,10 +148,10 @@ export const getInactiveProducts = asyncHandler(async (req, res) => {
 });
 
 export const getProductDetail = asyncHandler(async (req, res) => {
-    const productId = req.params.id;
+    const slug = req.params.slug;
     const loggedInUser = req.user;
 
-    const product = await Product.findById(productId)
+    const product = await Product.findOne({ slug })
                                 .populate("media", "images type _id").populate("category", "name slug heading _id")
                                 .populate("industry", "name slug heading id").populate("product_unit", "_id name description")
                                 .populate("subcategories", "name slug heading image")
