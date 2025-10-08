@@ -20,6 +20,7 @@ import * as InquiryController from "../../controllers/web/buyer/inquiry.controll
 import * as BuyLeadController from "../../controllers/web/buyer/buylead.controller.js";
 import * as NotificationController from "../../controllers/web/buyer/notification.controller.js";
 import * as productDetailsController from "../../controllers/web/productdetails.controller.js";
+import * as getSellerDetails  from "../../controllers/web/seller/sellerinfo.controller.js";
 
 
 const router = Router();
@@ -51,6 +52,7 @@ router.get("/brand/:id", brandsController.getBrandById);
 import * as productViewRouter from "../../controllers/web/productview.controller.js";
 router.get("/product/:slug", productViewRouter.getProductFullView);
 router.route("/buyer/product/:slug").get( productDetailsController.getProductDetail);
+// router.route("/buyer/:sellerId").get(getSellerDetails.getSellerDetail);
 
 
 
