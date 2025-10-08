@@ -4,7 +4,7 @@ import MongooseDelete from "mongoose-delete";
 const productSchema = new mongoose.Schema(
     {
         product_id: {type: String},
-        seller_id: {required: true, type: mongoose.Schema.Types.ObjectId, ref: "User"},
+        seller_id: { type: mongoose.Schema.Types.ObjectId, ref: "User",required: true,},
         name: {type: String, required: true, trim: true, index: true},
         slug: {type: String, index: true},
         description: {type: String},
