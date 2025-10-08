@@ -19,6 +19,7 @@ import * as SupplierController from "../../controllers/web/buyer/supplier.contro
 import * as InquiryController from "../../controllers/web/buyer/inquiry.controller.js";
 import * as BuyLeadController from "../../controllers/web/buyer/buylead.controller.js";
 import * as NotificationController from "../../controllers/web/buyer/notification.controller.js";
+import * as productDetailsController from "../../controllers/web/productdetails.controller.js";
 
 
 const router = Router();
@@ -49,6 +50,8 @@ router.get("/brand/:id", brandsController.getBrandById);
 
 import * as productViewRouter from "../../controllers/web/productview.controller.js";
 router.get("/product/:slug", productViewRouter.getProductFullView);
+router.route("/buyer/product/:slug").get( productDetailsController.getProductDetail);
+
 
 
 
@@ -71,7 +74,6 @@ router.route("/buyer/product/add-categories").post( productController.addCategor
 router.route("/buyer/product/add-product-catlog").post( upload.single("product_catlog"),  productController.addProductCatlog);
 router.route("/buyer/product/add-product-media").post( upload.single("product_media"),  productController.addMedia);
 router.route("/buyer/product/add-video").post( productController.addVideoUrl);
-router.route("/buyer/product/:slug").get( productController.getProductDetail);
 
 
 

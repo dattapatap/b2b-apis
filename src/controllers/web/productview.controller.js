@@ -94,7 +94,7 @@ export const getProductFullView = asyncHandler(async (req, res) => {
             mainImage,
             brochure: product.media.filter((m) => m.type === "brochure"),
         },
-        seller: sellerInfo, // seller info added here
+        seller: sellerInfo, 
         similarProducts,
     };
 
