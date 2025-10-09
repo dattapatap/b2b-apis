@@ -4,7 +4,6 @@ import {ApiResponse} from "../../utils/ApiResponse.js";
 
 import { Collections } from "../../models/collections.model.js";
 
-
 const allowedExtensions = [".jpg", ".jpeg", ".png"];
 const maxFileSize = 2 * 1024 * 1024;
 

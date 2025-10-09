@@ -49,10 +49,11 @@ router.get("/collection/:id", collectionController.getCollectionById);
 router.get("/brands",  brandsController.getAllBrands);
 router.get("/brand/:id", brandsController.getBrandById);
 
-import * as productViewRouter from "../../controllers/web/productview.controller.js";
-router.get("/product/:slug", productViewRouter.getProductFullView);
+import * as productList from "../../controllers/web/productlist.controller.js";
+router.get("/productlist", productList.getAllProducts);
 router.route("/buyer/product/:slug").get( productDetailsController.getProductDetail);
 // router.route("/buyer/:sellerId").get(getSellerDetails.getSellerDetail);
+// router.route("buyer/productlist").post(productDetailsController.getActiveProducts);
 
 
 
