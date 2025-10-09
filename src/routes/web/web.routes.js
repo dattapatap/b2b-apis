@@ -14,7 +14,7 @@ import * as collectionController from "../../controllers/web/collection.controll
 import * as brandsController from "../../controllers/web/brands.controller.js";
 import * as ProfileController from "../../controllers/web/buyer/profile.controller.js";
 import * as productController from "../../controllers/web/seller/product.controller.js";
-import * as ProductSearchController from "../../controllers/web/buyer/productsearch.controller.js";
+import * as ProductSearchController from "../../controllers/web/productsearch.controller.js";
 import * as SupplierController from "../../controllers/web/buyer/supplier.controller.js";
 import * as InquiryController from "../../controllers/web/buyer/inquiry.controller.js";
 import * as BuyLeadController from "../../controllers/web/buyer/buylead.controller.js";
@@ -53,7 +53,7 @@ import * as productList from "../../controllers/web/productlist.controller.js";
 router.get("/productlist", productList.getAllProducts);
 router.route("/buyer/product/:slug").get( productDetailsController.getProductDetail);
 // router.route("/buyer/:sellerId").get(getSellerDetails.getSellerDetail);
-// router.route("buyer/productlist").post(productDetailsController.getActiveProducts);
+router.route("/buyer/productsearch").get(ProductSearchController.searchProducts);
 
 
 
@@ -81,7 +81,6 @@ router.route("/buyer/product/add-video").post( productController.addVideoUrl);
 
 
 //Search Products
-router.route("/buyer/productsearch").get(ProductSearchController.searchProducts);
 router.route("/buyer/suppliers").get(SupplierController.getsellers);
 
 //Buyer personal information

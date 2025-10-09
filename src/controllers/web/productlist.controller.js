@@ -1,6 +1,5 @@
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
-import { ApiError } from "../../utils/ApiError.js";
 import { Product } from "../../models/product.model.js";
 import { ProductMedia } from "../../models/productMedia.model.js";
 
@@ -8,7 +7,9 @@ export const getAllProducts = asyncHandler(async (req, res) => {
     const { page = 1, limit = 20, category, search, status } = req.query;
 
     const query = {};
-    if (status) query.status = status;
+
+    // optional filters
+    if (status) query.status = status; // active or inactive
     if (category) query.category = category;
     if (search) query.name = { $regex: search, $options: "i" };
 
@@ -32,17 +33,20 @@ export const getAllProducts = asyncHandler(async (req, res) => {
         .populate("product_unit", "name")
         .populate("category", "name slug")
         .populate("industry", "name slug")
-        .select("name slug price product_unit category industry media description status seller_id")
+        .populate({
+            path: "specifications.spec_id",
+            select: "name inputType options",
+        })
+        .select("name slug price product_unit category industry media description status seller_id specifications")
         .skip(skip)
         .limit(parseInt(limit))
         .sort({ createdAt: -1 });
 
     const totalProducts = await Product.countDocuments(query);
 
-    if (!products.length) throw new ApiError(404, "No products found");
-
     const productList = products.map((p) => {
         const seller = p.seller_id;
+
         const sellerInfo = {
             companyName: seller?.personal_details?.company_name || "",
             logo: seller?.personal_details?.company_logo || "",
@@ -53,6 +57,12 @@ export const getAllProducts = asyncHandler(async (req, res) => {
             mobile: seller?.personal_details?.primary_mobile || "",
             contactSupplier: seller?.contacts?.[0]?.email || "",
         };
+
+        // Format specifications
+        const specifications = (p.specifications || []).map((s) => ({
+            title: s.spec_id?.name || "Unknown",
+            value: s.value,
+        }));
 
         return {
             id: p._id,
@@ -65,7 +75,8 @@ export const getAllProducts = asyncHandler(async (req, res) => {
             industry: p.industry?.name || "",
             status: p.status || "unknown",
             description: p.description || "",
-            seller: sellerInfo, // include seller info per product
+            specifications, // add specifications
+            seller: sellerInfo, // add seller info
         };
     });
 

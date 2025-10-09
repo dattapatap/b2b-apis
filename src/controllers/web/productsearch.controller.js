@@ -1,12 +1,26 @@
 import Joi from "joi";
-import {asyncHandler} from "../../../utils/asyncHandler.js";
-import {ApiError} from "../../../utils/ApiError.js";
-import {ApiResponse} from "../../../utils/ApiResponse.js";
-import {Product} from "../../../models/product.model.js";
+import {asyncHandler} from "../../utils/asyncHandler.js";
+import {ApiError} from "../../utils/ApiError.js";
+import {ApiResponse} from "../../utils/ApiResponse.js";
+import {Product} from "../../models/product.model.js";
 
 export const searchProducts = asyncHandler(async (req, res) => {
-    const {keyword,category,subcategory,city,industry, minPrice,maxPrice,status,location,minRating,specs,
-        page = 1,limit = 10,sortBy,} = req.query;
+    const {
+        keyword,
+        category,
+        subcategory,
+        city,
+        industry,
+        minPrice,
+        maxPrice,
+        status,
+        location,
+        minRating,
+        specs,
+        page = 1,
+        limit = 10,
+        sortBy,
+    } = req.query;
 
     const SearchSchema = Joi.object({
         keyword: Joi.string().optional().allow(""),
@@ -33,8 +47,8 @@ export const searchProducts = asyncHandler(async (req, res) => {
         if (keyword) query.$text = {$search: keyword};
         if (category) query.category = category;
         if (subcategory) query.subcategories = subcategory;
-        if(city) query.city = city;
-        if(industry) query.industry = industry;
+        if (city) query.city = city;
+        if (industry) query.industry = industry;
         if (status) query.status = status;
         if (minPrice || maxPrice) {
             query.price = {};
@@ -42,7 +56,17 @@ export const searchProducts = asyncHandler(async (req, res) => {
             if (maxPrice) query.price.$lte = Number(maxPrice);
         }
         if (minRating) query.rating = {$gte: Number(minRating)};
-        if (location) query["seller_id.location"] = location;
+        if (location) {
+            pipeline.push({
+                $lookup: {
+                    from: "sellers",
+                    localField: "seller_id",
+                    foreignField: "_id",
+                    as: "seller_info",
+                },
+            });
+            pipeline.push({$match: {"seller_info.location": location}});
+        }
 
         if (specs) {
             const specsArray = Array.isArray(specs) ? specs : JSON.parse(specs);
@@ -50,7 +74,6 @@ export const searchProducts = asyncHandler(async (req, res) => {
                 specifications: {$elemMatch: {spec_id: s.spec_id, value: s.value}},
             }));
         }
-
 
         let sortOptions = {};
         if (sortBy === "price_asc") sortOptions.price = 1;
@@ -61,8 +84,10 @@ export const searchProducts = asyncHandler(async (req, res) => {
         const skip = (Number(page) - 1) * Number(limit);
 
         const products = await Product.find(query)
-        .select("  -stages -status -additional_details -createdAt -updatedAt -__v -deleted -is_banned")
-            .populate("category subcategories seller_id product_unit media")
+            .select(
+                "  -stages -status -additional_details -createdAt -updatedAt -__v -deleted -is_banned",
+            )
+            .populate("category subcategories seller_id product_unit media industry", "name slug  company_name ")
             .sort(sortOptions)
             .skip(skip)
             .limit(Number(limit));
