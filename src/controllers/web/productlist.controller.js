@@ -8,9 +8,7 @@ export const getAllProducts = asyncHandler(async (req, res) => {
     const { page = 1, limit = 20, category, search, status } = req.query;
 
     const query = {};
-
-    // optional filters
-    if (status) query.status = status; // active or inactive
+    if (status) query.status = status;
     if (category) query.category = category;
     if (search) query.name = { $regex: search, $options: "i" };
 
@@ -22,10 +20,19 @@ export const getAllProducts = asyncHandler(async (req, res) => {
             select: "images",
             model: ProductMedia,
         })
+        .populate({
+            path: "seller_id",
+            populate: [
+                { path: "business_details" },
+                { path: "personal_details" },
+                { path: "contacts" },
+                { path: "business_card" },
+            ],
+        })
         .populate("product_unit", "name")
         .populate("category", "name slug")
         .populate("industry", "name slug")
-        .select("name slug price product_unit category industry media description status")
+        .select("name slug price product_unit category industry media description status seller_id")
         .skip(skip)
         .limit(parseInt(limit))
         .sort({ createdAt: -1 });
@@ -34,18 +41,33 @@ export const getAllProducts = asyncHandler(async (req, res) => {
 
     if (!products.length) throw new ApiError(404, "No products found");
 
-    const productList = products.map((p) => ({
-        id: p._id,
-        name: p.name,
-        slug: p.slug,
-        price: `₹${p.price}`,
-        unit: p.product_unit?.name || "Piece",
-        image: p.media?.[0]?.images?.original || null,
-        category: p.category?.name || "",
-        industry: p.industry?.name || "",
-        status: p.status || "unknown",
-        description: p.description || "",
-    }));
+    const productList = products.map((p) => {
+        const seller = p.seller_id;
+        const sellerInfo = {
+            companyName: seller?.personal_details?.company_name || "",
+            logo: seller?.personal_details?.company_logo || "",
+            location: seller?.contacts?.[0]?.address?.city || "",
+            gst: seller?.business_details?.gstin || "",
+            yearsCompleted: seller?.verifiedYears || 10,
+            review: seller?.rating || { stars: 5, count: 4 },
+            mobile: seller?.personal_details?.primary_mobile || "",
+            contactSupplier: seller?.contacts?.[0]?.email || "",
+        };
+
+        return {
+            id: p._id,
+            name: p.name,
+            slug: p.slug,
+            price: `₹${p.price}`,
+            unit: p.product_unit?.name || "Piece",
+            image: p.media?.[0]?.images?.original || null,
+            category: p.category?.name || "",
+            industry: p.industry?.name || "",
+            status: p.status || "unknown",
+            description: p.description || "",
+            seller: sellerInfo, // include seller info per product
+        };
+    });
 
     return res.status(200).json(
         new ApiResponse(
