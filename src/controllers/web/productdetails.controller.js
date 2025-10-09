@@ -23,7 +23,16 @@ export const getProductDetail = asyncHandler(async (req, res) => {
                 {path: "business_card"},
                 {path: "business_details"},
             ],
-        });
+        })
+         .populate({
+            path: "specifications.spec_id",
+            select: "name inputType options",
+        })
+        .populate({
+            path: "additional_details.additional_id",
+            select: "name inputType options"
+        })
+        ;
 
     if (!product) throw new ApiError(404, "Product not found.");
 
@@ -31,6 +40,12 @@ export const getProductDetail = asyncHandler(async (req, res) => {
         title: s.spec_id?.name || "Unknown",
         value: s.value,
     }));
+
+    const additionalDetails = (product.additional_details || []).map(d => ({
+        title: d.additional_id?.name || d.name || "Unknown",
+        value: d.value
+    }));
+    
 
     const sellerInfo = {
         companyName: product.seller_id?.personal_details?.company_name || "",
@@ -52,6 +67,7 @@ export const getProductDetail = asyncHandler(async (req, res) => {
             specifications,
             description: product.description,
             subcategories: product.subcategories,
+            additionalDetails,
             media: product.media,
         },
         seller: sellerInfo,

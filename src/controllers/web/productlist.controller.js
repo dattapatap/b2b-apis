@@ -75,8 +75,8 @@ export const getAllProducts = asyncHandler(async (req, res) => {
             industry: p.industry?.name || "",
             status: p.status || "unknown",
             description: p.description || "",
-            specifications, // add specifications
-            seller: sellerInfo, // add seller info
+            specifications, 
+            seller: sellerInfo, 
         };
     });
 
