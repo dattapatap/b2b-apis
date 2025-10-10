@@ -82,7 +82,7 @@ sellerRouter.route("/profile/contacts/:id").get(contactsController.getContactByI
 sellerRouter.route("/profile/contacts/reorder").patch(contactsController.reorderContacts);
 
 sellerRouter.post("/profile/update-bank-info", profileController.updateBankDetails);
-// sellerRouter.post("/profile/update-bank-info", profileController.updateCompanyInfo);
+sellerRouter.post("/profile/company-info", profileController.updateCompanyInfo);
 
 sellerRouter.post("/profile/update-bussiness-card", upload.fields([{ name: "front_view" }, { name: "back_view" }]) , profileController.updateBusinessCard);
 sellerRouter.route("/user-profile").get(profileController.getUserProfile)
