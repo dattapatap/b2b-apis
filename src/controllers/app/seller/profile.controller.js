@@ -14,7 +14,8 @@ import {UserPersonalDetails} from "../../../models/userPersonalDetails.model.js"
 import {UserBankDetails} from "../../../models/userBank.model.js";
 import { UserBussinessCard } from "../../../models/userBusinessCard.model.js";
 import { deleteFromCloudinary, uploadOnCloudinary } from "../../../utils/cloudinary.js";
-// import {CompanyInformation} from "../../../models/companyInformation.model.js";
+import {CompanyInformation} from "../../../models/companyInformation.model.js";
+import {Product} from "../../../models/product.model.js";
 
 const allowedExtensions = [".jpg", ".jpeg", ".png"];
 const maxFileSize = 2 * 1024 * 1024; // 2MB
@@ -52,125 +53,133 @@ export const getUserProfile = asyncHandler(async (req, res) => {
 
 //Registration Process
 
-export const updateCompanyInfo = asyncHandler(async (req, resp) => {
-    const {company_name, gst_no, product_name, product_price, contact_name, whatsapp} = req.body;
-    
 
-    const schema = Joi.object({
-        company_name: Joi.string()
-            .pattern(/^[a-zA-Z0-9&\- ]{2,100}$/)
-            .required()
-            .messages({
-                "string.pattern.base":
-                    "Company name must contain only letters, numbers, spaces, & and -",
-                "string.empty": "Company name is required",
-            }),
+export const updateCompanyInfo = asyncHandler(async (req, res) => {
+  const loggedUser = req.user?._id; // get logged-in user
 
-        gst_no: Joi.string()
-            .regex(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/),
+  if (!loggedUser) {
+    return res.status(401).json({
+      success: false,
+      message: "User not authenticated",
+    });
+  }
 
-        contact_name: Joi.string()
-            .min(3)
-            .max(50)
-            .pattern(/^[a-zA-Z0-9&\- ]+$/)
-            .required(),
-        whatsapp: Joi.string()
-            .pattern(/^[6-9][0-9]{9}$/)
-            .required()
-            .messages({
-                "string.pattern.base": "Mobile number must be a 10-digit number starting with 6-9",
-            }),
-        product_name: Joi.string()
-            .min(3)
-            .max(100)
-            .pattern(/^[a-zA-Z0-9&\- ]{2,100}$/)
-            .required(),
-        product_price: Joi.number().positive().precision(2).required(),
+  const {
+    company_name,
+    product_name,
+    product_price,
+    contact_person,
+    whatsapp,
+    designation,
+    alt_mobile,
+    primary_email,
+    landline_no,
+    city,
+    state,
+    country,
+  } = req.body;
+
+  // ------------------ Validation ------------------
+  const schema = Joi.object({
+    company_name: Joi.string().min(2).max(100).required(),
+    contact_person: Joi.string().min(3).max(50).required(),
+    whatsapp: Joi.string()
+      .pattern(/^[6-9][0-9]{9}$/)
+      .required()
+      .messages({
+        "string.pattern.base": "Mobile number must be a 10-digit number starting with 6-9",
+      }),
+    product_name: Joi.string().min(3).max(100).required(),
+    product_price: Joi.number().positive().precision(2).required(),
+  });
+
+  await schema.validateAsync(
+    { company_name, contact_person, whatsapp, product_name, product_price },
+    { abortEarly: false }
+  );
+
+  // ------------------ Start Session ------------------
+  const session = await mongoose.startSession();
+
+  try {
+    session.startTransaction();
+
+    // ------------------ Fetch User ------------------
+    const user = await User.findById(loggedUser).session(session);
+    if (!user) throw new Error("User not found");
+
+    // ------------------ Company Info ------------------
+    let companyInfo = await CompanyInformation.findOne({ user: loggedUser }).session(session);
+
+    if (companyInfo) {
+      // update existing
+      companyInfo.company_name = company_name;
+      companyInfo.contact_person = contact_person;
+      companyInfo.primary_mobile = whatsapp;
+      companyInfo.designation = designation || companyInfo.designation;
+      companyInfo.alt_mobile = alt_mobile || companyInfo.alt_mobile;
+      companyInfo.primary_email = primary_email || companyInfo.primary_email;
+      companyInfo.landline_no = landline_no || companyInfo.landline_no;
+      companyInfo.city = city || companyInfo.city;
+      companyInfo.state = state || companyInfo.state;
+      companyInfo.country = country || companyInfo.country;
+
+      await companyInfo.save({ session });
+    } else {
+      // create new
+      companyInfo = await CompanyInformation.create(
+        [
+          {
+            user: loggedUser,
+            company_name,
+            contact_person,
+            primary_mobile: whatsapp,
+            designation,
+            alt_mobile,
+            primary_email,
+            landline_no,
+            city,
+            state,
+            country,
+          },
+        ],
+        { session }
+      );
+    }
+
+    // ------------------ Product ------------------
+    const slug = slugify(product_name, { lower: true }) + "-" + Date.now();
+
+    const newProduct = new Product({
+      name: product_name,
+      seller_id: loggedUser,
+      slug,
+      price: product_price,
     });
 
-    await schema.validateAsync(
-        {company_name, gst_no, contact_name, whatsapp, product_name, product_price},
-        {abortEarly: false},
-    );
+    await newProduct.save({ session });
 
-    // const session = await mongoose.startSession();
-    // try {
-    //     session.startTransaction();
+    // ------------------ Commit Transaction ------------------
+    await session.commitTransaction();
+    session.endSession();
 
-    //     const user = await User.findById(loggedUser).session(session);
-    //     let businessDetails;
-    //     if (user.business_details) {
-    //         if (businessDetails) {
-    //             businessDetails = await BusinessDetails.findById(user.business_details).session(
-    //                 session,
-    //             );
-    //             businessDetails.company_name = company_name;
-    //             businessDetails.gst_number = gst_no;
-    //             businessDetails.contact_name = contact_name;
-    //             businessDetails.contact_no = whatsapp;
-    //             await businessDetails.save({session});
-    //         }
-    //         {
-    //             businessDetails = await BusinessDetails.create(
-    //                 [
-    //                     {
-    //                         company_name: company_name,
-    //                         gst_number: gst_no,
-    //                         contact_name: gst_no,
-    //                         contact_no: whatsapp,
-    //                     },
-    //                 ],
-    //                 {session},
-    //             );
-    //             user.business_details = businessDetails[0]._id;
-    //             await user.save({session});
-    //         }
-    //     } else {
-    //         // Create new
-    //         businessDetails = await BusinessDetails.create(
-    //             [
-    //                 {
-    //                     company_name: company_name,
-    //                     gst_number: gst_no,
-    //                     contact_name: gst_no,
-    //                     contact_no: whatsapp,
-    //                 },
-    //             ],
-    //             {session},
-    //         );
-    //         user.business_details = businessDetails[0]._id;
-    //         await user.save({session});
-    //     }
+    // ------------------ Return updated user with company info ------------------
+    const updatedUser = await User.findById(loggedUser)
+      .select("-otp -otpExpires -refreshToken -__v -createdAt -updatedAt")
+      .populate({
+        path: "company_info", // make sure your User model has this ref
+        select: "-_id -createdAt -updatedAt",
+      });
 
-    //     const slug = slugify(product_name, {lower: true}) + "-" + Date.now();
-
-    //     const productData = {
-    //         name: product_name,
-    //         seller_id: loggedUser,
-    //         slug: slug,
-    //         price: product_price,
-    //     };
-    //     const newProduct = new Product(productData);
-    //     await newProduct.save();
-
-    //     await session.commitTransaction();
-    //     session.endSession();
-
-    //     const updatedUser = await User.findById(loggedUser)
-    //         .select("-otp -otpExpires -refreshToken -__v -createdAt -updatedAt")
-    //         .populate({
-    //             path: "business_details",
-    //             select: "-_id -createdAt -updatedAt",
-    //         });
-
-        return resp
-            .status(200)
-            .json(new ApiResponse(200, updatedUser, "Company information updated successfully."));
-    // } catch (error) {
-    //     await session.abortTransaction();
-    //     session.endSession();
-    //     throw error;
-    // }
+    return res
+      .status(200)
+      .json(new ApiResponse(200, updatedUser, "Company information updated successfully."));
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    console.error("❌ Error in updateCompanyInfo:", error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
 });
 
 // export const updateContactPerson = asyncHandler(async (req, resp) => {

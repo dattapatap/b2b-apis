@@ -3,6 +3,9 @@ import {ApiError} from "../../utils/ApiError.js";
 import {ApiResponse} from "../../utils/ApiResponse.js";
 import {Product} from "../../models/product.model.js";
 import {ProductMedia} from "../../models/productMedia.model.js";
+// import { CompanyInformation } from "../../models/companyInformation.model.js"
+import { UserPersonalDetails } from "../../models/userPersonalDetails.model.js";
+
 
 export const getProductDetail = asyncHandler(async (req, res) => {
   const { slug } = req.params;
@@ -80,4 +83,27 @@ export const getProductDetail = asyncHandler(async (req, res) => {
     .json(
       new ApiResponse(200, responseData, "Product details fetched successfully.")
     );
+});
+
+
+
+export const getCompanyDetails = asyncHandler(async (req, res) => {
+    const { userId } = req.params; // /api/web/v1/company/:userId
+
+    const company = await UserPersonalDetails.findOne({ user_id: userId, deleted: false });
+
+    if (!company) {
+        return res.status(404).json({
+            statusCode: 404,
+            success: false,
+            message: "Company details not found",
+        });
+    }
+
+    return res.status(200).json({
+        statusCode: 200,
+        success: true,
+        message: "Company details fetched successfully",
+        data: company,
+    });
 });

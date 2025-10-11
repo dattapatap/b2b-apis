@@ -3,7 +3,7 @@ import MongooseDelete from "mongoose-delete";
 
 const companyInfoSchema = new Schema(
     {
-        user: {type: Schema.Types.ObjectId, ref: "User", required: true},
+        user_id: {type: Schema.Types.ObjectId, ref: "User", required: true},
         company_name: {type: String},
         contact_person: {type: String},
         designation: {type: String},

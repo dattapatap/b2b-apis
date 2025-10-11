@@ -15,12 +15,13 @@ import * as brandsController from "../../controllers/web/brands.controller.js";
 import * as ProfileController from "../../controllers/web/buyer/profile.controller.js";
 import * as productController from "../../controllers/web/seller/product.controller.js";
 import * as ProductSearchController from "../../controllers/web/productsearch.controller.js";
+import * as ProductFilterController from "../../controllers/web/filter.controller.js";
 import * as SupplierController from "../../controllers/web/buyer/supplier.controller.js";
 import * as InquiryController from "../../controllers/web/buyer/inquiry.controller.js";
 import * as BuyLeadController from "../../controllers/web/buyer/buylead.controller.js";
-import * as NotificationController from "../../controllers/web/buyer/notification.controller.js";
+import * as NotificationController from "../../controllers/web/notification.controller.js";
 import * as productDetailsController from "../../controllers/web/productdetails.controller.js";
-import * as getSellerDetails  from "../../controllers/web/seller/sellerinfo.controller.js";
+// import * as getSellerDetails  from "../../controllers/web/seller/sellerinfo.controller.js";
 
 
 const router = Router();
@@ -52,8 +53,10 @@ router.get("/brand/:id", brandsController.getBrandById);
 import * as productList from "../../controllers/web/productlist.controller.js";
 router.get("/productlist", productList.getAllProducts);
 router.route("/buyer/product/:slug").get( productDetailsController.getProductDetail);
+router.route("/company/:sellerId").get( productDetailsController.getCompanyDetails);
 // router.route("/buyer/:sellerId").get(getSellerDetails.getSellerDetail);
 router.route("/buyer/productsearch").get(ProductSearchController.searchProducts);
+router.route("/buyer/filter").get(ProductFilterController.filterProducts);
 
 
 

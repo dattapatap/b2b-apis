@@ -11,12 +11,6 @@ export const searchProducts = asyncHandler(async (req, res) => {
         subcategory,
         city,
         industry,
-        minPrice,
-        maxPrice,
-        status,
-        location,
-        minRating,
-        specs,
         page = 1,
         limit = 10,
         sortBy,
@@ -26,14 +20,8 @@ export const searchProducts = asyncHandler(async (req, res) => {
         keyword: Joi.string().optional().allow(""),
         category: Joi.string().optional().allow(""),
         subcategory: Joi.string().optional().allow(""),
-        minPrice: Joi.number().optional(),
-        maxPrice: Joi.number().optional(),
-        status: Joi.string().optional(),
-        location: Joi.string().optional(),
         city: Joi.string().optional(),
-        industry: Joi.string().optional(),
-        minRating: Joi.number().optional(),
-        specs: Joi.string().optional(),
+        industry: Joi.string().optional(),      
         page: Joi.number().optional(),
         limit: Joi.number().optional(),
         sortBy: Joi.string().optional(),
@@ -49,31 +37,6 @@ export const searchProducts = asyncHandler(async (req, res) => {
         if (subcategory) query.subcategories = subcategory;
         if (city) query.city = city;
         if (industry) query.industry = industry;
-        if (status) query.status = status;
-        if (minPrice || maxPrice) {
-            query.price = {};
-            if (minPrice) query.price.$gte = Number(minPrice);
-            if (maxPrice) query.price.$lte = Number(maxPrice);
-        }
-        if (minRating) query.rating = {$gte: Number(minRating)};
-        if (location) {
-            pipeline.push({
-                $lookup: {
-                    from: "sellers",
-                    localField: "seller_id",
-                    foreignField: "_id",
-                    as: "seller_info",
-                },
-            });
-            pipeline.push({$match: {"seller_info.location": location}});
-        }
-
-        if (specs) {
-            const specsArray = Array.isArray(specs) ? specs : JSON.parse(specs);
-            query.$and = specsArray.map((s) => ({
-                specifications: {$elemMatch: {spec_id: s.spec_id, value: s.value}},
-            }));
-        }
 
         let sortOptions = {};
         if (sortBy === "price_asc") sortOptions.price = 1;

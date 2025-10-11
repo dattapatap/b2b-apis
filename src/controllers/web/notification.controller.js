@@ -1,10 +1,10 @@
 import Joi from "joi";
-import {asyncHandler} from "../../../utils/asyncHandler.js";
-import {ApiError} from "../../../utils/ApiError.js";
-import {ApiResponse} from "../../../utils/ApiResponse.js";
+import {asyncHandler} from "../../utils/asyncHandler.js";
+import {ApiError} from "../../utils/ApiError.js";
+import {ApiResponse} from "../../utils/ApiResponse.js";
 
-import {Notification} from "../../../models/notification.model.js";
-import { sendNotification } from "../../../utils/notification.js";
+import {Notification} from "../../models/notification.model.js";
+import { sendNotification } from "../../utils/notification.js";
 
 // Create new notification
 export const createNotification = async (req, res) => {
