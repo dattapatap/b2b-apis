@@ -21,7 +21,6 @@ const allowedExtensions = [".jpg", ".jpeg", ".png"];
 const maxFileSize = 2 * 1024 * 1024; // 2MB
 
 
-
 export const getUserProfile = asyncHandler(async (req, res) => {
   const userId = req.user?._id;
 
@@ -452,6 +451,14 @@ export const upsertPersonalDetails = asyncHandler(async (req, res) => {
   facebook_url: Joi.string().uri().optional(),
   map_url: Joi.string().uri().optional(),
   company_logo: Joi.string().optional(),
+  digitalB2B_member_since: Joi.date().optional(),
+  number_of_employees: Joi.number().integer().min(1).optional(),
+  annual_turnover: Joi.string().optional(),
+  gst_registration_date: Joi.date().optional(),
+  gst_number: Joi.string().pattern(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/).optional(),
+  exports_to: Joi.string().optional(),
+  address: Joi.string().optional(),
+
 });
 
   if (!userId) {

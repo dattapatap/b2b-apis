@@ -86,7 +86,6 @@ export const getProductDetail = asyncHandler(async (req, res) => {
 });
 
 
-
 export const getCompanyDetails = asyncHandler(async (req, res) => {
     const { userId } = req.params; // /api/web/v1/company/:userId
 

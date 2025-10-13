@@ -3,7 +3,7 @@ import MongooseDelete from "mongoose-delete";
 
 const personalDetailsSchema = new Schema(
     {
-        user_id: { type: Schema.Types.ObjectId, ref: "User", required: true },
+        user_id: {type: Schema.Types.ObjectId, ref: "User", required: true},
         company_name: {type: String},
         contact_person: {type: String},
         designation: {type: String},
@@ -28,13 +28,18 @@ const personalDetailsSchema = new Schema(
         google_business_url: {type: String},
         facebook_url: {type: String},
         map_url: {type: String},
-        
+
         company_logo: {type: String},
-
-
+        digitalB2B_member_since: {type: Date},
+        number_of_employees: {type: Number},
+        annual_turnover: {type: String},
+        gst_registration_date: {type: Date},
+        gst_number: {type: String},
+        exports_to: {type: String},
+        address: {type: String},
     },
     {timestamps: true},
 );
 
-personalDetailsSchema.plugin(MongooseDelete, { deleted: true, overrideMethods: 'all' });
+personalDetailsSchema.plugin(MongooseDelete, {deleted: true, overrideMethods: "all"});
 export const UserPersonalDetails = mongoose.model("UserPersonalDetails", personalDetailsSchema);
