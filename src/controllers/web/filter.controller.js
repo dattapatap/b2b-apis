@@ -1,52 +1,59 @@
-import {asyncHandler} from "../../utils/asyncHandler.js";
-import {ApiResponse} from "../../utils/ApiResponse.js";
-import {Product} from "../../models/product.model.js";
-
+import { asyncHandler } from "../../utils/asyncHandler.js";
+import { ApiResponse } from "../../utils/ApiResponse.js";
+import { Product } from "../../models/product.model.js";
+import { Categories } from "../../models/categories.model.js";
+import { SubCategories } from "../../models/subCategories.model.js";
+import mongoose from "mongoose";
 
 export const filterProducts = asyncHandler(async (req, res) => {
-    const {minPrice,maxPrice,name,sellerId,category,subcategory,city,sortBy = "createdAt",order = "desc",page = 1,limit = 10,} = req.query;
+  const {category,subcategory,city,sortBy = "createdAt", order = "desc",page = 1,limit = 10,} = req.query;
 
-    const filter = {};
+  const filter = {};
+if (category) {
+    const cat = await Categories.findOne({
+      name: { $regex: new RegExp(`^${category}$`, "i") }, // case-insensitive exact match
+    });
+    if (cat) filter.category = cat._id;
+  }
 
-    if (minPrice) filter.price = {...filter.price, $gte: Number(minPrice)};
-    if (maxPrice) filter.price = {...filter.price, $lte: Number(maxPrice)};
+  // 🔹 Convert subcategory name → _id
+  if (subcategory) {
+    const subcat = await SubCategories.findOne({
+      name: { $regex: new RegExp(`^${subcategory}$`, "i") },
+    });
+    if (subcat) filter.subcategory = subcat._id;
+  }
 
-    if (name) filter.name = {$regex: name, $options: "i"};
 
-    // Seller filter
-    if (sellerId) filter.seller_id = sellerId;
 
-    if (category) filter.category_id = category;
-    if (subcategory) filter.subcategory_id = subcategory;
-    if (city) filter["seller_info.city"] = city;
+  const skip = (Number(page) - 1) * Number(limit);
+  const sortOrder = order.toLowerCase() === "asc" ? 1 : -1;
 
-    const skip = (Number(page) - 1) * Number(limit);
-    const sortOrder = order.toLowerCase() === "asc" ? 1 : -1;
+  console.log("🧩 Final filter used:", filter);
 
-    // Populate seller info to filter by city
-    const products = await Product.find(filter)
-        .populate({
-            path: "seller_id",
-            select: "name city",
-            as: "seller_info",
-        })
-        .sort({[sortBy]: sortOrder})
-        .skip(skip)
-        .limit(Number(limit))
-        .populate(
-            "category subcategories seller_id product_unit media industry",
-            "name slug  company_name ",
-        );
+  let products = await Product.find(filter)
+    .populate({
+      path: "seller_id",
+      select: "name city",
+      match: city ? { city: { $regex: new RegExp(city, "i") } } : {},
+    })
+    .sort({ [sortBy]: sortOrder })
+    .skip(skip)
+    .limit(Number(limit))
+    .populate("category subcategory seller_id product_unit media industry", "name slug company_name")
+    .lean();
 
-    const total = await Product.countDocuments(filter);
+  products = products.filter((p) => p.seller_id !== null);
 
-    return res
-        .status(200)
-        .json(
-            new ApiResponse(
-                200,
-                {total, page: Number(page), limit: Number(limit), products},
-                "Filtered products fetched successfully",
-            ),
-        );
+  console.log("✅ Products found:", products.length);
+
+  const total = products.length;
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      { total, page: Number(page), limit: Number(limit), products },
+      "Filtered products fetched successfully"
+    )
+  );
 });

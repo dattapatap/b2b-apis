@@ -56,8 +56,8 @@ router.route("/buyer/product/:slug").get( productDetailsController.getProductDet
 // router.route("/seller/:userId").get( productDetailsController.getCompanyDetails);
 // router.route("/company/:userId").get( productDetailsController.getCompanyDetails);
 // router.route("/buyer/:sellerId").get(getSellerDetails.getSellerDetail);
-router.route("/buyer/productsearch").get(ProductSearchController.searchProducts);
-router.route("/buyer/filter").get(ProductFilterController.filterProducts);
+router.route("/productsearch").get(ProductSearchController.searchProducts);
+router.route("/products").get(ProductFilterController.filterProducts);
 
 
 
