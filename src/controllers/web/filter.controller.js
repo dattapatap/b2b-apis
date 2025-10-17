@@ -29,7 +29,7 @@ if (category) {
   const skip = (Number(page) - 1) * Number(limit);
   const sortOrder = order.toLowerCase() === "asc" ? 1 : -1;
 
-  console.log("🧩 Final filter used:", filter);
+  console.log(" Final filter used:", filter);
 
   let products = await Product.find(filter)
     .populate({
@@ -45,7 +45,7 @@ if (category) {
 
   products = products.filter((p) => p.seller_id !== null);
 
-  console.log("✅ Products found:", products.length);
+  console.log("Products found:", products.length);
 
   const total = products.length;
 
