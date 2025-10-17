@@ -40,7 +40,7 @@ if (category) {
     .sort({ [sortBy]: sortOrder })
     .skip(skip)
     .limit(Number(limit))
-    .populate("category subcategory seller_id product_unit media industry", "name slug company_name")
+    .populate("category subcategories seller_id product_unit media industry", "name slug company_name")
     .lean();
 
   products = products.filter((p) => p.seller_id !== null);
