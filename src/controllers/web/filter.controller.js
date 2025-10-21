@@ -3,20 +3,20 @@ import { ApiResponse } from "../../utils/ApiResponse.js";
 import { Product } from "../../models/product.model.js";
 import { Categories } from "../../models/categories.model.js";
 import { SubCategories } from "../../models/subCategories.model.js";
-import mongoose from "mongoose";
 
 export const filterProducts = asyncHandler(async (req, res) => {
   const {category,subcategory,city,sortBy = "createdAt", order = "desc",page = 1,limit = 10,} = req.query;
 
   const filter = {};
+
 if (category) {
     const cat = await Categories.findOne({
-      name: { $regex: new RegExp(`^${category}$`, "i") }, // case-insensitive exact match
+      name: { $regex: new RegExp(`^${category}$`, "i") }, 
     });
     if (cat) filter.category = cat._id;
   }
 
-  // 🔹 Convert subcategory name → _id
+  // Convert subcategory name → _id
   if (subcategory) {
     const subcat = await SubCategories.findOne({
       name: { $regex: new RegExp(`^${subcategory}$`, "i") },

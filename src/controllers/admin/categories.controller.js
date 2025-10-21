@@ -53,7 +53,6 @@ export const getCategoryById = asyncHandler(async (req, res) => {
 });
 
 
-
 // Create a new Category
 export const createCategory = asyncHandler(async (req, res) => {    
     const { name, heading, industry_id} = req.body;
