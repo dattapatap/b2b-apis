@@ -5,7 +5,6 @@ import {Product} from "../../models/product.model.js";
 import {ProductMedia} from "../../models/productMedia.model.js";
 import {UserPersonalDetails} from "../../models/userPersonalDetails.model.js";
 
-
 export const getProductDetail = asyncHandler(async (req, res) => {
     const {slug} = req.params;
 
@@ -68,14 +67,14 @@ export const getProductDetail = asyncHandler(async (req, res) => {
     // find similar products
     const similarProducts = await Product.find({
         subcategories: {$in: product.subcategories},
-        _id: {$ne: product._id}, 
+        _id: {$ne: product._id},
     })
         .populate({
             path: "media",
             select: "images",
             model: ProductMedia,
         })
-         .populate({
+        .populate({
             path: "seller_id",
             populate: [
                 {path: "personal_details"},
@@ -91,9 +90,36 @@ export const getProductDetail = asyncHandler(async (req, res) => {
     const formattedSimilar = similarProducts.map((p) => ({
         id: p._id,
         name: p.name,
-      companyName: p.seller_id?.personal_details?.company_name || "",
-     mobile: p.seller_id?.personal_details?.primary_mobile || "",
+        companyName: p.seller_id?.personal_details?.company_name || "",
+        mobile: p.seller_id?.personal_details?.primary_mobile || "",
         city: p.seller_id?.contacts?.[0]?.address?.city || " Bengluru",
+        price: p.price,
+        images: p.media?.map((m) => m.images) || [],
+    }));
+
+    // find similar category products
+    const similarCategoryProducts = await Product.find({
+        category: product.category, // same category
+        _id: {$ne: product._id}, // exclude current product
+    })
+        .populate({
+            path: "media",
+            select: "images",
+            model: ProductMedia,
+        })
+        .populate({
+            path: "seller_id",
+            populate: [{path: "personal_details"}, {path: "contacts"}],
+        })
+        .limit(8)
+        .lean();
+
+    // format category products
+    const formattedCategoryProducts = similarCategoryProducts.map((p) => ({
+        id: p._id,
+        name: p.name,
+        companyName: p.seller_id?.personal_details?.company_name || "",
+        city: p.seller_id?.contacts?.[0]?.address?.city || "",
         price: p.price,
         images: p.media?.map((m) => m.images) || [],
     }));
@@ -114,6 +140,7 @@ export const getProductDetail = asyncHandler(async (req, res) => {
         seller: sellerInfo,
         companyDetails: companyDetails || {},
         similarProducts: formattedSimilar,
+        similarCategoryProducts: formattedCategoryProducts, 
     };
 
     return res
