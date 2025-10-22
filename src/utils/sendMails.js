@@ -6,13 +6,13 @@ export const sendEmail = async (to, subject, text) => {
     const transporter = nodemailer.createTransport({
       service: "gmail", // or any SMTP
       auth: {
-        user: "your_email@gmail.com",
-        pass: "your_app_password" // use app password for Gmail
+        user: "dattatraypatap3@gmail.com",
+        pass: "rwgk ifcs ycac fivs" // use app password for Gmail
       }
     });
 
     await transporter.sendMail({
-      from: '"DigitalB2B" <your_email@gmail.com>',
+      from: '"DigitalB2B" <${process.env.EMAIL_USER}>',
       to,
       subject,
       text

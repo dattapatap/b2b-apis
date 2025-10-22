@@ -91,11 +91,10 @@ export const getAllIndustry = asyncHandler(async (req, res) => {
 export const getIndustryById = asyncHandler(async (req, res) => {
     const {id} = req.params;
 
-    const industry = await Industries.findById(id).select("-isDeleted -createdAt -updatedAt");;
+    const industry = await Industries.findById(id).select("-isDeleted -createdAt -updatedAt");
     if (!industry) {
         throw new ApiError(404, "Industry not found");
     }
-
     return res.status(200).json(new ApiResponse(200, industry, "Industry fetched successfully"));
 });
 

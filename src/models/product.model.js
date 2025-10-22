@@ -8,6 +8,7 @@ const productSchema = new mongoose.Schema(
         name: {type: String, required: true, trim: true, index: true},
         slug: {type: String, index: true},
         description: {type: String},
+        brochure: {type: String},
         city:{
             type: mongoose.Schema.Types.ObjectId,
             ref: "Cities",

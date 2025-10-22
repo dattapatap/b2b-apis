@@ -75,6 +75,15 @@ export const getProductDetail = asyncHandler(async (req, res) => {
             select: "images",
             model: ProductMedia,
         })
+         .populate({
+            path: "seller_id",
+            populate: [
+                {path: "personal_details"},
+                {path: "contacts"},
+                {path: "business_card"},
+                {path: "business_details"},
+            ],
+        })
         .limit(8)
         .lean();
 
@@ -82,6 +91,8 @@ export const getProductDetail = asyncHandler(async (req, res) => {
     const formattedSimilar = similarProducts.map((p) => ({
         id: p._id,
         name: p.name,
+      companyName: p.seller_id?.personal_details?.company_name || "",
+     mobile: p.seller_id?.personal_details?.primary_mobile || "",
         city: p.seller_id?.contacts?.[0]?.address?.city || " Bengluru",
         price: p.price,
         images: p.media?.map((m) => m.images) || [],
