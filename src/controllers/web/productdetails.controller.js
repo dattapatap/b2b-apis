@@ -4,6 +4,7 @@ import {ApiResponse} from "../../utils/ApiResponse.js";
 import {Product} from "../../models/product.model.js";
 import {ProductMedia} from "../../models/productMedia.model.js";
 import {UserPersonalDetails} from "../../models/userPersonalDetails.model.js";
+import {Categories} from "../../models/categories.model.js";
 
 export const getProductDetail = asyncHandler(async (req, res) => {
     const {slug} = req.params;
@@ -97,32 +98,24 @@ export const getProductDetail = asyncHandler(async (req, res) => {
         images: p.media?.map((m) => m.images) || [],
     }));
 
-    // find similar category products
-    const similarCategoryProducts = await Product.find({
-        category: product.category, // same category
-        _id: {$ne: product._id}, // exclude current product
+    // get related categories from products in the same subcategories
+    // step 1: get products in the same subcategories (exclude current)
+    const productsInSameSub = await Product.find({
+        subcategories: {$in: product.subcategories.map((s) => s._id)},
+        _id: {$ne: product._id},
     })
-        .populate({
-            path: "media",
-            select: "images",
-            model: ProductMedia,
-        })
-        .populate({
-            path: "seller_id",
-            populate: [{path: "personal_details"}, {path: "contacts"}],
-        })
-        .limit(8)
+        .select("category")
         .lean();
 
-    // format category products
-    const formattedCategoryProducts = similarCategoryProducts.map((p) => ({
-        id: p._id,
-        name: p.name,
-        companyName: p.seller_id?.personal_details?.company_name || "",
-        city: p.seller_id?.contacts?.[0]?.address?.city || "",
-        price: p.price,
-        images: p.media?.map((m) => m.images) || [],
-    }));
+    // step 2: get unique category IDs
+    const relatedCategoryIds = [
+        ...new Set(productsInSameSub.map((p) => p.category).filter(Boolean)),
+    ];
+
+    // step 3: fetch category details
+    const relatedCategories = await Categories.find({_id: {$in: relatedCategoryIds}})
+        .select("name slug")
+        .lean();
 
     const responseData = {
         product: {
@@ -140,7 +133,7 @@ export const getProductDetail = asyncHandler(async (req, res) => {
         seller: sellerInfo,
         companyDetails: companyDetails || {},
         similarProducts: formattedSimilar,
-        similarCategoryProducts: formattedCategoryProducts, 
+        relatedCategories: relatedCategories,
     };
 
     return res

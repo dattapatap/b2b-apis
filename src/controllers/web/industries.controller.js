@@ -164,10 +164,8 @@ export const getIndustryDetails = asyncHandler(async (req, res) => {
 });
 
 export const getAllIndustryWithCollections = asyncHandler(async (req, res) => {
-    const { slug } = req.params;
-
-    const industry = await Industries.aggregate([
-        { $match: { slug, deleted: { $ne: true } } },
+    const industries = await Industries.aggregate([
+        { $match: { deleted: { $ne: true } } }, 
 
         // lookup categories
         {
@@ -198,7 +196,7 @@ export const getAllIndustryWithCollections = asyncHandler(async (req, res) => {
                                         as: "collections",
                                         pipeline: [
                                             { $match: { deleted: { $ne: true } } },
-                                            { $project: { name: 1, slug: 1,image:1 } }
+                                            { $project: { name: 1, slug: 1, image: 1 } }
                                         ]
                                     }
                                 },
@@ -206,24 +204,22 @@ export const getAllIndustryWithCollections = asyncHandler(async (req, res) => {
                             ]
                         }
                     },
-                    { $project: { name: 1, slug: 1, subcategories: 1 ,image:1} }
+                    { $project: { name: 1, slug: 1, subcategories: 1, image: 1 } }
                 ]
             }
         },
-        { $project: { name: 1, slug: 1, categories: 1, } }
+        { $project: { name: 1, slug: 1, categories: 1 } }
     ]);
 
-    if (!industry.length) {
-        throw new ApiError(404, "Industry not found");
+    if (!industries.length) {
+        throw new ApiError(404, "No industries found");
     }
 
     return res.status(200).json(
         new ApiResponse(
             200,
-            {
-                industry: industry[0],
-            },
-            "Categories fetched successfully"
+            { industries },
+            "Industries fetched successfully"
         )
     );
 });
