@@ -62,7 +62,7 @@ const SubCategorySchema = Joi.object({
 
     heading: Joi.string().required(),
     category_id : Joi.string().required(),
-    group : Joi.string().required(),
+    group: Joi.string().required(),
     sr_no: Joi.string().optional().allow('', null)
         .external(async (value, helpers) => {
             const { id, operation } = helpers.state.ancestors[0];

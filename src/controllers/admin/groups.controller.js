@@ -70,9 +70,9 @@ export const updateGroup = asyncHandler(async (req, res) => {
     const group = await Groups.findOne({ _id: id, isDeleted: false });
     if (!group) { throw new ApiError(404, "Group not found") }
 
-    group.name = name || group.name;
-    group.description = description || group.description;
-    group.keywords = keywords || group.keywords;
+   group.name = name?.trim() || group.name;
+if (description !== undefined) group.description = description;
+if (keywords !== undefined) group.keywords = keywords;
     await group.save();
 
     return res.status(200).json(new ApiResponse(200, group, "Group updated successfully"));

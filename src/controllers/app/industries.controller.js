@@ -11,11 +11,12 @@ export const getAllIndustry = asyncHandler(async (req, res) => {
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
 
-    const industry = await Industries.find({isDeleted: false})
-        .skip(skip).limit(limit).select("deleted -createdAt -updatedAt -__v");
-    console.log(industry);
+    const industry = await Industries.find({ deleted: { $ne: true } })
+        .skip(skip)
+        .limit(limit)
+        .select(" -createdAt -updatedAt -__v");
 
-    const totalIndustry = await Industries.find({isDeleted: false}).countDocuments();
+    const totalIndustry = await Industries.countDocuments({ deleted: { $ne: true } });
     const totalPages = Math.ceil(totalIndustry / limit);
 
     return res.status(200).json(
@@ -30,8 +31,8 @@ export const getAllIndustry = asyncHandler(async (req, res) => {
                     limit,
                 },
             },
-            "Industry fetched successfully",
-        ),
+            "Industries fetched successfully"
+        )
     );
 });
 

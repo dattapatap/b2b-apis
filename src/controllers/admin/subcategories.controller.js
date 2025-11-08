@@ -54,6 +54,7 @@ export const getSubCategoryById = asyncHandler(async (req, res) => {
 // Create a new Category
 export const createSubCategory = asyncHandler(async (req, res) => {    
     const { name, heading, category_id, group} = req.body;
+
     let { slug, sr_no } = req.body;    
     let imageUrl = null;
     
@@ -78,7 +79,7 @@ export const createSubCategory = asyncHandler(async (req, res) => {
         }
         imageUrl = await uploadOnCloudinary(req.file.path, "sub-categories");
 
-        const sub_categories = await SubCategories.create({ name, slug,  heading, image: imageUrl, sr_no , category: category_id, groups : group });
+        const sub_categories = await SubCategories.create({ name, slug,  heading, image: imageUrl, sr_no , category: category_id, group: group });
         return res.status(201).json(new ApiResponse(201, sub_categories, "Sub Category created successfully"));
 
     } catch (error) {      
